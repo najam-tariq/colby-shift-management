@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Constraints & Equity - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block header_title %}Constraints & Equity{% endblock %}
+{% block header_subtitle %}Manage shift rules, duration policies, and fairness settings{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>GitHub Issues #21-37</h3>
+            <p>Shift duration, gaps, fairness balancing, policy management, etc.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
+

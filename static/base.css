@@ -1,0 +1,128 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar {
+    background-color: white;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    margin: 1rem;
+}
+
+.navbar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4rem;
+}
+
+.navbar-brand {
+    color: #2c3e50;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.navbar-menu {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+}
+
+.navbar-menu a {
+    color: #2c3e50;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.navbar-menu a:hover {
+    background-color: #f0f0f0;
+}
+
+.navbar-menu a.active {
+    background-color: #e0e0e0;
+    font-weight: 600;
+}
+
+.page-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0.75rem 1rem;
+        margin: 0.5rem;
+        border-radius: 8px;
+    }
+
+    .navbar-content {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+        width: 100%;
+    }
+
+    .navbar-menu {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .navbar-menu a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .page-content {
+        padding: 1rem;
+    }
+
+    /* Make login card full width on mobile */
+    .login-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .login-card {
+        margin: 0;
+        border-radius: 8px;
+    }
+}
+
+/* Tablet Responsive Styles */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .navbar-content {
+        gap: 2rem;
+    }
+
+    .navbar-menu {
+        gap: 1rem;
+    }
+}
+

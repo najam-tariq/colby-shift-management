@@ -2,7 +2,12 @@ from flask import Flask
 from flask_login import LoginManager
 from requests import Session
 from models import db, User
-from views import main_blueprint
+from blueprints.auth import auth_bp
+from blueprints.availability import availability_bp
+from blueprints.staffing import staffing_bp
+from blueprints.constraints import constraints_bp
+from blueprints.scheduler import scheduler_bp
+from blueprints.outputs import outputs_bp
 import os
 
 app = Flask(__name__)
@@ -23,15 +28,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'main.shiftManagementLogin'
+login_manager.login_view = 'auth.shiftManagementLogin'
 login_manager.login_message = 'Please log in to access this page.'
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-# Register blueprint for routes
-app.register_blueprint(main_blueprint)
+# Register blueprints for routes
+app.register_blueprint(auth_bp)
+app.register_blueprint(availability_bp)
+app.register_blueprint(staffing_bp)
+app.register_blueprint(constraints_bp)
+app.register_blueprint(scheduler_bp)
+app.register_blueprint(outputs_bp)
 
 # Create tables
 with app.app_context():

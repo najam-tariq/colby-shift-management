@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='landing.css') }}">
+{% endblock %}
+
+{% block header_title %}Welcome, {{ current_user.name }}!{% endblock %}
+{% block header_subtitle %}Role: {{ current_user.role.title() }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Your Profile</h3>
+            <p>Email: {{ current_user.email }}</p>
+            <p>Account Status: {{ 'Active' if current_user.is_active else 'Inactive' }}</p>
+        </div>
+    </div>
+
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Quick Actions</h3>
+            <p>Shift management features coming soon...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('auth.logout') }}">Sign out</a> | <a href="#">Help & Support</a>{% endblock %}

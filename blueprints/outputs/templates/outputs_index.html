@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Outputs & Access - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block header_title %}Outputs & Access{% endblock %}
+{% block header_subtitle %}Export schedules, preview, and manage student access{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>GitHub Issues #40-49</h3>
+            <p>Live preview, CSV export, iCal generation, student views, etc.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
+

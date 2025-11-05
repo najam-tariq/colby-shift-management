@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     
     availability = db.relationship('Availability', back_populates='user', cascade='all, delete')
     shifts = db.relationship('Shift', back_populates='user', cascade='all, delete')
+    policies_updated = db.relationship('Policy', back_populates='updated_by_user', cascade='all, delete')
     
     def set_password(self, password):
         """Set password hash"""
@@ -59,9 +60,29 @@ class Term(db.Model):
     availability = db.relationship('Availability', back_populates='term', cascade='all, delete')
     staffing_needs = db.relationship('StaffingNeeds', back_populates='term', cascade='all, delete')
     shifts = db.relationship('Shift', back_populates='term', cascade='all, delete')
+    policies = db.relationship('Policy', back_populates='term', cascade='all, delete')
     
     def __repr__(self):
         return f'<Term {self.name}>'
+
+class Policy(db.Model):
+    __tablename__ = 'policy'
+    
+    policy_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    term_id = db.Column(db.Integer, db.ForeignKey('terms.term_id'), nullable=False)
+    min_shift_length = db.Column(db.Integer, nullable=False)
+    max_shift_length = db.Column(db.Integer, nullable=False)
+    min_break_length = db.Column(db.Integer, nullable=False)
+    max_break_length = db.Column(db.Integer, nullable=False)
+    undesireable_start = db.Column(db.Integer, nullable=False)
+    undesireable_end = db.Column(db.Integer, nullable=False)
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    
+    term = db.relationship('Term', back_populates='policies')
+    updated_by_user = db.relationship('User', back_populates='policies_updated')
+    
+    def __repr__(self):
+        return f'<Policy {self.policy_id} for Term {self.term_id}>'
 
 class StaffingNeeds(db.Model):
     __tablename__ = 'staffing_needs'

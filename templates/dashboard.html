@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Colby Shift Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Colby Shift Management</h1>
+                <p>Welcome! Choose an option to get started</p>
+            </div>
+
+            <div class="dashboard-options">
+                <a href="/login" class="dashboard-btn primary">
+                    <div class="btn-content">
+                        <h3>Sign In</h3>
+                        <p>Access your existing account</p>
+                    </div>
+                </a>
+
+                <a href="/signup" class="dashboard-btn secondary">
+                    <div class="btn-content">
+                        <h3>Sign Up</h3>
+                        <p>Create a new account</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="login-footer">
+                <p>Need help? <a href="#">Contact support</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

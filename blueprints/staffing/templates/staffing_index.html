@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Staffing Needs - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block header_title %}Staffing Needs{% endblock %}
+{% block header_subtitle %}Define coverage windows, roles, and headcount requirements{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>GitHub Issues #13-20</h3>
+            <p>Coverage windows, role requirements, staffing templates, validation, etc.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
+

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Availability Management - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block header_title %}Availability & Inputs{% endblock %}
+{% block header_subtitle %}Manage student availability, templates, and submission deadlines{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <div class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>GitHub Issues #1-12</h3>
+            <p>CSV import, templates, deadlines, weekly grid, audit trail, etc.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}

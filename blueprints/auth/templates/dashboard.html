@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block header_subtitle %}Welcome! Choose an option to get started{% endblock %}
+
+{% block content %}
+<div class="dashboard-options">
+    <a href="{{ url_for('auth.shiftManagementLogin') }}" class="dashboard-btn primary">
+        <div class="btn-content">
+            <h3>Sign In</h3>
+            <p>Access your existing account</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('auth.shiftManagementSignUp') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Sign Up</h3>
+            <p>Create a new account</p>
+        </div>
+    </a>
+</div>
+{% endblock %}

@@ -14,6 +14,8 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     password_hash = db.Column(db.Text, nullable=False)
     
+    availability = db.relationship('Availability', back_populates='user', cascade='all, delete')
+    
     def set_password(self, password):
         """Set password hash"""
         self.password_hash = generate_password_hash(password)
@@ -28,3 +30,16 @@ class User(UserMixin, db.Model):
     
     def __repr__(self):
         return f'<User {self.email}>'
+    
+class Availability(db.Model):
+    __tablename__ = "Availability"
+    
+    availiability_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    term_id = db.Column(db.Integer, db.ForeignKey('terms.term_id'))
+    day_of_week = db.Column(db.Text, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    is_exception = db.Column(db.Boolean, nullable=False, default=False)
+    
+    user = db.relationship('User', back_populates='Availability')

@@ -161,96 +161,6 @@ body {
     text-decoration: underline;
 }
 
-/* Responsive design */
-@media (max-width: 480px) {
-    .login-card {
-        padding: 30px 20px;
-        margin: 10px;
-    }
-    
-    .login-header h1 {
-        font-size: 24px;
-    }
-    
-    .form-options {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
-    }
-}
-
-/* Dashboard specific styles */
-.dashboard-options {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.dashboard-btn {
-    display: block;
-    padding: 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-
-.dashboard-btn.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.dashboard-btn.secondary {
-    background: white;
-    color: #333;
-    border-color: #e1e5e9;
-}
-
-.dashboard-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-btn.primary:hover {
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-}
-
-.dashboard-btn.secondary:hover {
-    border-color: #667eea;
-    background-color: #f8f9fa;
-}
-
-.btn-content h3 {
-    margin: 0 0 6px 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.btn-content p {
-    margin: 0;
-    font-size: 14px;
-    opacity: 0.8;
-}
-
-.dashboard-btn.secondary .btn-content p {
-    color: #666;
-}
-
-@media (max-width: 480px) {
-    .dashboard-btn {
-        padding: 16px;
-    }
-    
-    .btn-content h3 {
-        font-size: 16px;
-    }
-    
-    .btn-content p {
-        font-size: 13px;
-    }
-}
-
 /* Flash messages */
 .flash-messages {
     margin-bottom: 20px;
@@ -281,3 +191,22 @@ body {
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
+
+/* Responsive design */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 30px 20px;
+        margin: 10px;
+    }
+    
+    .login-header h1 {
+        font-size: 24px;
+    }
+    
+    .form-options {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+

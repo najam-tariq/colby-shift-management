@@ -42,3 +42,4 @@ class Availability(db.Model):
     end_time = db.Column(db.Time, nullable=False)
     is_exception = db.Column(db.Boolean, nullable=False, default=False)
     
+    user = db.relationship('User', back_populates='Availability')

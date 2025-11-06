@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Undesirable Time Windows - Constraints & Equity{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.undesirable-windows-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.add-window-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.windows-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.window-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.window-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.window-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.window-type.early_morning { background: #ffe4b5; color: #8B4513; }
+.window-type.late_evening { background: #e6e6fa; color: #4B0082; }
+.window-type.weekend { background: #f0e68c; color: #556B2F; }
+.window-type.custom { background: #f0f8ff; color: #4682B4; }
+
+.window-details {
+    margin: 10px 0;
+}
+
+.weight-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #ff6b6b;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    text-decoration: none;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Undesirable Time Windows{% endblock %}
+{% block header_subtitle %}Define time periods that should be avoided when scheduling shifts{% endblock %}
+
+{% block content %}
+<div class="undesirable-windows-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="add-window-section">
+        <h3>Add New Undesirable Time Window</h3>
+        <p>Define time periods that should be avoided when scheduling shifts. Higher weights make time periods more undesirable.</p>
+        <a href="{{ url_for('constraints.add_undesirable_window') }}" class="btn-primary">Add New Window</a>
+    </div>
+
+    <div class="current-windows-section">
+        <h3>Current Undesirable Time Windows</h3>
+        
+        {% if windows %}
+            <div class="windows-grid">
+                {% for window, policy, term in windows %}
+                    <div class="window-card">
+                        <div class="window-header">
+                            <h4>{{ window.name }}</h4>
+                            <span class="window-type {{ window.window_type }}">{{ window.window_type.replace('_', ' ') }}</span>
+                        </div>
+                        
+                        <div class="window-details">
+                            <p><strong>Term:</strong> {{ term.name }}</p>
+                            <p><strong>Time:</strong> {{ window.start_time.strftime('%H:%M') }} - {{ window.end_time.strftime('%H:%M') }}</p>
+                            
+                            {% if window.day_of_week is not none %}
+                                <p><strong>Day:</strong> 
+                                    {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                    {{ days[window.day_of_week] }}
+                                </p>
+                            {% else %}
+                                <p><strong>Day:</strong> All days</p>
+                            {% endif %}
+                            
+                            <p><strong>Weight:</strong> <span class="weight-indicator">{{ window.weight }}</span></p>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('constraints.delete_undesirable_window', window_id=window.window_id) }}" 
+                              onsubmit="return confirm('Are you sure you want to delete this undesirable time window?')" style="margin-top: 15px;">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No undesirable time windows defined yet. <a href="{{ url_for('constraints.add_undesirable_window') }}">Add the first one</a>.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>
+{% endblock %}

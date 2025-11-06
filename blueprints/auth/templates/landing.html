@@ -11,18 +11,46 @@
 
 {% block content %}
 <div class="dashboard-options">
+    <a href="{{ url_for('availability.index') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Availability</h3>
+            <p>Manage employee availability</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('staffing.index') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Staffing</h3>
+            <p>View staffing requirements</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('constraints.index') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Constraints & Equity</h3>
+            <p>Manage shift rules and undesirable time windows</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('scheduler.index') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Scheduler</h3>
+            <p>Generate and manage schedules</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('outputs.index') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Outputs</h3>
+            <p>View and export schedules</p>
+        </div>
+    </a>
+
     <div class="dashboard-btn secondary">
         <div class="btn-content">
             <h3>Your Profile</h3>
             <p>Email: {{ current_user.email }}</p>
-            <p>Account Status: {{ 'Active' if current_user.is_active else 'Inactive' }}</p>
-        </div>
-    </div>
-
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>Quick Actions</h3>
-            <p>Shift management features coming soon...</p>
+            <p>Role: {{ current_user.role.title() }}</p>
         </div>
     </div>
 </div>

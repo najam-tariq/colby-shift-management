@@ -11,9 +11,16 @@
 
 {% block content %}
 <div class="dashboard-options">
+    <a href="{{ url_for('constraints.undesirable_windows') }}" class="dashboard-btn secondary">
+        <div class="btn-content">
+            <h3>Undesirable Time Windows</h3>
+            <p>Define time periods to avoid when scheduling (early morning, late evening, weekends)</p>
+        </div>
+    </a>
+    
     <div class="dashboard-btn secondary">
         <div class="btn-content">
-            <h3>GitHub Issues #21-37</h3>
+            <h3>Other Constraints (Coming Soon)</h3>
             <p>Shift duration, gaps, fairness balancing, policy management, etc.</p>
         </div>
     </div>

@@ -17,22 +17,129 @@
 
 {% block content %}
 <div class="main-content">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">
+            <strong>{{ '❌' if category == 'error' else '✅' if category == 'success' else 'ℹ️' }}</strong> {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <!-- Content Grid -->
     <div class="content-grid">
         <!-- Main Staffing Section -->
         <div class="staffing-section">
+            <!-- Term Management Section -->
+            <div class="term-management-section">
+                <div class="term-header">
+                    <h3>📅 Term Management</h3>
+                    <button type="button" class="btn-create-term" onclick="toggleTermForm()">
+                        ➕ Create New Term
+                    </button>
+                </div>
+
+                <!-- Create New Term Form (Hidden by default) -->
+                <div id="create-term-form" class="create-term-form" style="display: none;">
+                    <h4>Create New Term</h4>
+                    <form method="POST" action="{{ url_for('staffing.index') }}" class="term-creation-form">
+                        <input type="hidden" name="action" value="create_term">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="term_name">Term Name:</label>
+                                <input type="text" id="term_name" name="term_name" required
+                                    placeholder="e.g., Fall 2025" maxlength="50">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="start_date">Start Date:</label>
+                                <input type="date" id="start_date" name="start_date" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="end_date">End Date:</label>
+                                <input type="date" id="end_date" name="end_date" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="availability_deadline">Availability Deadline:</label>
+                                <input type="date" id="availability_deadline" name="availability_deadline" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-create">Create Term</button>
+                            <button type="button" class="btn-cancel" onclick="toggleTermForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Term Selection Section -->
+                {% if available_terms %}
+                <div class="term-selector-section">
+                    <div class="term-selector">
+                        <label for="term_select" class="term-label">
+                            <strong>Select Active Term:</strong>
+                        </label>
+                        <select id="term_select" class="term-dropdown" onchange="changeTerm(this.value)">
+                            <option value="">-- Select a Term --</option>
+                            {% for term in available_terms %}
+                            <option value="{{ term.term_id }}" {% if selected_term and
+                                term.term_id==selected_term.term_id %}selected{% endif %}>
+                                {{ term.name }} ({{ term.start_date.strftime('%m/%d/%Y') }} - {{
+                                term.end_date.strftime('%m/%d/%Y') }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% if selected_term %}
+                    <div class="term-info">
+                        <span class="term-badge {% if selected_term.locked %}locked{% else %}active{% endif %}">
+                            {% if selected_term.locked %}🔒 Locked{% else %}✅ Active{% endif %}
+                        </span>
+                        <span class="term-details">
+                            Availability Deadline: {{ selected_term.availability_deadline.strftime('%m/%d/%Y') }}
+                        </span>
+                        <form method="POST" action="{{ url_for('staffing.index') }}" style="display: inline;">
+                            <input type="hidden" name="action" value="toggle_term_lock">
+                            <input type="hidden" name="term_id" value="{{ selected_term.term_id }}">
+                            <button type="submit" class="btn-toggle-lock">
+                                {% if selected_term.locked %}🔓 Unlock{% else %}🔒 Lock{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="no-terms-message">
+                    <p>📋 No terms available. Create your first term to get started!</p>
+                </div>
+                {% endif %}
+            </div>
+
             <div class="section-header">
                 <h2>🏢 Coverage Requirements</h2>
                 <p>Define time blocks and required staffing levels for each coverage window</p>
             </div>
 
             <div class="section-content">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="coverage-form">
                     <!-- Coverage Requirements Upload Area -->
                     <div class="upload-area">
                         <div class="upload-icon">🏢</div>
                         <p class="upload-text">Add new coverage requirement for staffing needs</p>
                         <input type="hidden" name="action" value="add_coverage">
+                        {% if selected_term %}
+                        <input type="hidden" name="term_id" value="{{ selected_term.term_id }}">
+                        {% endif %}
 
                         <div class="coverage-inputs">
                             <div class="input-row">
@@ -133,66 +240,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Weekly Coverage Schedule Table -->
-                    {% if visual_data %}
-                    <div class="coverage-schedule">
-                        <h4>� Weekly Coverage Schedule</h4>
-                        <table class="coverage-schedule-table">
-                            <thead>
-                                <tr>
-                                    <th>📅 Day</th>
-                                    <th>Mon</th>
-                                    <th>Tue</th>
-                                    <th>Wed</th>
-                                    <th>Thu</th>
-                                    <th>Fri</th>
-                                    <th>Sat</th>
-                                    <th>Sun</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Coverage by Time Blocks -->
-                                {% set time_slots = {} %}
-                                {% for day_name in day_names %}
-                                {% for block in visual_data[day_name] %}
-                                {% set time_key = block.start_time + '-' + block.end_time %}
-                                {% if time_key not in time_slots %}
-                                {% set _ = time_slots.update({time_key: {}}) %}
-                                {% endif %}
-                                {% set _ = time_slots[time_key].update({loop.index0: block}) %}
-                                {% endfor %}
-                                {% endfor %}
-
-                                {% for time_range, days_data in time_slots.items() %}
-                                <tr>
-                                    <td class="time-slot">{{ time_range.replace('-', ' - ') }}</td>
-                                    {% for day_idx in range(7) %}
-                                    <td class="coverage-cell">
-                                        {% if day_idx in days_data %}
-                                        {% set block = days_data[day_idx] %}
-                                        <span class="coverage-info {{ block.role }}">
-                                            {{ block.count }} {{ block.role }}{% if block.count > 1 %}s{% endif %}
-                                        </span>
-                                        {% else %}
-                                        <span class="no-coverage">—</span>
-                                        {% endif %}
-                                    </td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-
-                                {% if not time_slots %}
-                                <tr>
-                                    <td colspan="8" class="empty-schedule">
-                                        No coverage requirements defined yet. Add your first requirement above.
-                                    </td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% endif %}
-
                     <div class="form-actions">
                         <a href="{{ url_for('auth.shiftManagement') }}" class="btn-secondary">
                             🏠 Back to Dashboard
@@ -253,14 +300,52 @@
         button.textContent = isHidden ? '📘 Hide Coverage Guide' : '📘 View Coverage Format Guide';
     }
 
+    function changeTerm(termId) {
+        // Navigate to the same page with the new term_id parameter
+        if (termId) {
+            const url = new URL(window.location);
+            url.searchParams.set('term_id', termId);
+            window.location.href = url.toString();
+        }
+    }
+
+    function toggleTermForm() {
+        const form = document.getElementById('create-term-form');
+        const isHidden = form.style.display === 'none';
+        form.style.display = isHidden ? 'block' : 'none';
+
+        // Set minimum dates
+        if (isHidden) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start_date').setAttribute('min', today);
+            document.getElementById('end_date').setAttribute('min', today);
+            document.getElementById('availability_deadline').setAttribute('min', today);
+        }
+    }
+
     // Set default times based on common patterns
     document.addEventListener('DOMContentLoaded', function () {
+        console.log('DEBUG: DOM loaded');
+
+        // Add debug event listener to term form
+        const termForm = document.querySelector('.term-creation-form');
+        if (termForm) {
+            console.log('DEBUG: Found term form, adding submit listener');
+            termForm.addEventListener('submit', function (e) {
+                console.log('DEBUG: Term form submit triggered');
+                console.log('DEBUG: Form data:', new FormData(this));
+                // Don't prevent default, let it submit
+            });
+        } else {
+            console.log('DEBUG: Term form not found!');
+        }
+
         const startTime = document.getElementById('start_time');
         const endTime = document.getElementById('end_time');
 
         // Set default to 9AM-5PM if empty
-        if (!startTime.value) startTime.value = '09:00';
-        if (!endTime.value) endTime.value = '17:00';
+        if (startTime && !startTime.value) startTime.value = '09:00';
+        if (endTime && !endTime.value) endTime.value = '17:00';
 
         // Auto-update end time when start time changes
         startTime.addEventListener('change', function () {
@@ -425,8 +510,8 @@
         alert(validation);
     }
 
-    // Form validation
-    document.querySelector('form').addEventListener('submit', function (e) {
+    // Form validation for coverage form only
+    document.getElementById('coverage-form').addEventListener('submit', function (e) {
         const startTime = document.getElementById('start_time').value;
         const endTime = document.getElementById('end_time').value;
         const action = e.target.querySelector('input[name="action"]').value;

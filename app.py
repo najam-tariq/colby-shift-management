@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_login import LoginManager
+from flask import request
 import os
 
 # Import database instance only - models will be imported later after app config
@@ -62,6 +63,42 @@ app.register_blueprint(staffing_bp)
 app.register_blueprint(constraints_bp)
 app.register_blueprint(scheduler_bp)
 app.register_blueprint(outputs_bp)
+
+# Global request/response instrumentation to diagnose missing debug prints & redirects
+@app.before_request
+def _debug_before_request():
+    try:
+        auth_state = 'auth' if (hasattr(request, 'method') and hasattr(login_manager._login_disabled, '__call__') == False) else 'n/a'
+    except Exception:
+        auth_state = 'n/a'
+    from flask_login import current_user
+    print(f"TRACE: BEFORE {request.method} {request.path} is_authenticated={getattr(current_user, 'is_authenticated', None)}", flush=True)
+
+@app.after_request
+def _debug_after_request(resp):
+    print(f"TRACE: AFTER  {request.method} {request.path} -> {resp.status_code} redirect_to={resp.headers.get('Location')}", flush=True)
+    return resp
+
+# SQLAlchemy event hooks for commit visibility
+from sqlalchemy import event
+from sqlalchemy.orm import Session
+
+@event.listens_for(Session, "after_flush")
+def _after_flush(session, ctx):
+    if session.new:
+        print("TRACE: after_flush NEW objects:", [repr(o) for o in session.new], flush=True)
+    if session.dirty:
+        print("TRACE: after_flush DIRTY objects:", [repr(o) for o in session.dirty], flush=True)
+    if session.deleted:
+        print("TRACE: after_flush DELETED objects:", [repr(o) for o in session.deleted], flush=True)
+
+@event.listens_for(Session, "after_commit")
+def _after_commit(session):
+    print("TRACE: after_commit committed successfully", flush=True)
+
+@event.listens_for(Session, "after_rollback")
+def _after_rollback(session):
+    print("TRACE: after_rollback invoked", flush=True)
 
 # Import all models so SQLAlchemy can create all tables
 from models import User, Term, StaffingNeeds, Availability, Shift, Policy, UndesirableTimeWindow

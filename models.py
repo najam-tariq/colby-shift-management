@@ -34,7 +34,7 @@ class User(UserMixin, db.Model):
         return f'<User {self.email}>'
     
 class Availability(db.Model):
-    __tablename__ = "Availability"
+    __tablename__ = "availability"
     
     availiability_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
@@ -46,6 +46,9 @@ class Availability(db.Model):
     
     user = db.relationship('User', back_populates='availability')
     term = db.relationship('Term', back_populates='availability')
+    
+    def __repr__(self):
+        return f'<Availability {self.availiability_id} for User {self.user_id}>'
 
 class Term(db.Model):
     __tablename__ = 'terms'

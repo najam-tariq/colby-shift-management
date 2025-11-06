@@ -43,41 +43,43 @@ body {
     margin-bottom: 30px;
 }
 
-/* Dashboard options for landing page */
+/* Dashboard options for landing page - smaller and centered */
 .dashboard-options {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
 }
 
 .dashboard-btn {
     display: block;
-    padding: 20px;
+    padding: 16px;
     border-radius: 8px;
     text-decoration: none;
     transition: all 0.3s ease;
     border: 2px solid transparent;
-}
-
-.dashboard-btn.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
 }
 
 .dashboard-btn.secondary {
     background: white;
     color: #333;
     border-color: #e1e5e9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-btn.accent {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin-top: 8px;
 }
 
 .dashboard-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-btn.primary:hover {
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .dashboard-btn.secondary:hover {
@@ -85,42 +87,25 @@ body {
     background-color: #f8f9fa;
 }
 
+.dashboard-btn.accent:hover {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 .btn-content h3 {
     margin: 0 0 6px 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
 }
 
 .btn-content p {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     opacity: 0.8;
+    line-height: 1.3;
 }
 
 .dashboard-btn.secondary .btn-content p {
     color: #666;
-}
-
-/* Footer */
-.login-footer {
-    margin-top: 25px;
-    padding-top: 20px;
-    border-top: 1px solid #e1e5e9;
-}
-
-.login-footer p {
-    color: #666;
-    font-size: 14px;
-}
-
-.login-footer a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.login-footer a:hover {
-    text-decoration: underline;
 }
 
 /* Responsive design */
@@ -135,15 +120,16 @@ body {
     }
 
     .dashboard-btn {
-        padding: 16px;
+        padding: 14px;
+        max-width: 100%;
     }
     
     .btn-content h3 {
-        font-size: 16px;
+        font-size: 15px;
     }
     
     .btn-content p {
-        font-size: 13px;
+        font-size: 12px;
     }
 }
 

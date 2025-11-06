@@ -4,6 +4,29 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('auth.static', filename='landing.css') }}">
+<style>
+    /* Make landing page more compact */
+    .content-wrapper {
+        max-width: 450px;
+        margin: 0 auto;
+        min-height: auto;
+        padding: 1.5rem;
+    }
+
+    .page-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .page-footer {
+        margin-top: 1.5rem;
+        padding-top: 0.75rem;
+    }
+</style>
 {% endblock %}
 
 {% block header_title %}Welcome, {{ current_user.name }}!{% endblock %}
@@ -25,6 +48,13 @@
             <p>Shift management features coming soon...</p>
         </div>
     </div>
+
+    <a href="{{ url_for('availability.availability') }}" class="dashboard-btn accent">
+        <div class="btn-content">
+            <h3>Enter Availability</h3>
+            <p>Submit your work hours or scheduling preferences</p>
+        </div>
+    </a>
 </div>
 {% endblock %}
 

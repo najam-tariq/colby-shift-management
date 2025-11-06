@@ -3,21 +3,194 @@
 {% block title %}Availability Management - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('availability.static', filename='availability.css') }}">
 {% endblock %}
 
-{% block header_title %}Availability & Inputs{% endblock %}
-{% block header_subtitle %}Manage student availability, templates, and submission deadlines{% endblock %}
-
 {% block content %}
-<div class="dashboard-options">
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>GitHub Issues #1-12</h3>
-            <p>CSV import, templates, deadlines, weekly grid, audit trail, etc.</p>
+<div class="main-content">
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Main Availability Section -->
+        <div class="availability-section">
+            <div class="section-header">
+                <h2>📊 Student Availability</h2>
+                <p>View and edit availability schedules for all students</p>
+            </div>
+
+            <div class="section-content">
+                <form method="POST" enctype="multipart/form-data">
+                    <!-- CSV Upload Area -->
+                    <div class="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Upload CSV file to bulk import availability data</p>
+                        <div class="file-input-wrapper">
+                            <input type="file" name="csv_file" accept=".csv" class="file-input" id="csvFile">
+                            <label for="csvFile" class="file-input-label">Choose File</label>
+                        </div>
+                        <button type="submit" name="action" value="upload" class="btn-primary"
+                            style="margin-left: 1rem;">
+                            Upload & Process
+                        </button>
+                    </div>
+
+                    <!-- CSV Format Guide -->
+                    <button type="button" class="guide-toggle" onclick="toggleGuide()">
+                        📘 View CSV Format Guide
+                    </button>
+
+                    <div id="csvGuide" class="csv-guide" style="display: none;">
+                        <h4>CSV Format Requirements:</h4>
+                        <pre>name,day_of_week,start_time,end_time
+John Doe,Monday,09:00,17:00
+Jane Smith,Tuesday,13:00,17:30</pre>
+                        <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                            <li><strong>day_of_week:</strong> Monday, Tuesday, Wednesday, Thursday, Friday, Saturday,
+                                Sunday</li>
+                            <li><strong>Time format:</strong> 24-hour format (HH:MM)</li>
+                            <li><strong>Multiple entries:</strong> One row per availability block</li>
+                        </ul>
+                    </div>
+
+                    <!-- Availability Table -->
+                    <table class="availability-table">
+                        <thead>
+                            <tr>
+                                <th>👤 Student Name</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                                <th>Sun</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student, days in availability_data.items() %}
+                            <tr>
+                                <td><input type="text" name="student_name[]" value="{{ student }}" readonly></td>
+                                {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                                <td><input type="text" name="{{ d }}[]" value="{{ days[d] }}"
+                                        placeholder="e.g. 9:00-17:00"></td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+
+                            <!-- New Entry Row -->
+                            <tr style="background: #f8f9fb;">
+                                <td><input type="text" name="student_name[]" placeholder="➕ Add new student..."></td>
+                                {% for d in ['mon','tue','wed','thu','fri','sat','sun'] %}
+                                <td><input type="text" name="{{ d }}[]" placeholder="9:00-17:00"></td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="form-actions">
+                        <button type="submit" name="action" value="update" class="btn-primary">
+                            💾 Save Changes
+                        </button>
+                        <a href="{{ url_for('auth.shiftManagement') }}" class="btn-secondary">
+                            🏠 Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Actions Sidebar -->
+        <div class="quick-actions">
+            <h3>⚡ Quick Actions</h3>
+
+            <button class="action-button" onclick="clearAllAvailability()">
+                🗑️ Clear All
+            </button>
+
+            <button class="action-button" onclick="setWeekdaySchedule()">
+                📅 Standard Weekdays
+            </button>
+
+            <button class="action-button" onclick="setWeekendSchedule()">
+                🎉 Weekend Hours
+            </button>
+
+            <button class="action-button" onclick="exportToCSV()">
+                📥 Export CSV
+            </button>
+
+            <button class="action-button" onclick="viewStats()">
+                📈 View Statistics
+            </button>
         </div>
     </div>
 </div>
+
+<!-- JavaScript for Interactivity -->
+<script>
+    function toggleGuide() {
+        const guide = document.getElementById('csvGuide');
+        const isHidden = guide.style.display === 'none';
+        guide.style.display = isHidden ? 'block' : 'none';
+
+        const button = document.querySelector('.guide-toggle');
+        button.textContent = isHidden ? '📘 Hide CSV Guide' : '📘 View CSV Format Guide';
+    }
+
+    function clearAllAvailability() {
+        if (confirm('Are you sure you want to clear all availability data?')) {
+            const inputs = document.querySelectorAll('.availability-table input:not([readonly])');
+            inputs.forEach(input => input.value = '');
+        }
+    }
+
+    function setWeekdaySchedule() {
+        const weekdayColumns = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+        const rows = document.querySelectorAll('.availability-table tbody tr:not(:last-child)');
+
+        rows.forEach(row => {
+            weekdayColumns.forEach(day => {
+                const input = row.querySelector(`input[name="${day}[]"]`);
+                if (input && !input.value) {
+                    input.value = '9:00-17:00';
+                }
+            });
+        });
+    }
+
+    function setWeekendSchedule() {
+        const weekendColumns = ['Sat', 'Sun'];
+        const rows = document.querySelectorAll('.availability-table tbody tr:not(:last-child)');
+
+        rows.forEach(row => {
+            weekendColumns.forEach(day => {
+                const input = row.querySelector(`input[name="${day}[]"]`);
+                if (input && !input.value) {
+                    input.value = '10:00-16:00';
+                }
+            });
+        });
+    }
+
+    function exportToCSV() {
+        alert('CSV export functionality will be implemented soon!');
+    }
+
+    function viewStats() {
+        alert('Statistics view will be implemented soon!');
+    }
+
+    // File input feedback
+    document.getElementById('csvFile').addEventListener('change', function (e) {
+        const fileName = e.target.files[0]?.name;
+        if (fileName) {
+            const label = document.querySelector('.file-input-label');
+            label.textContent = fileName;
+            label.style.background = '#28a745';
+        }
+    });
+</script>
 {% endblock %}
 
-{% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
+{% block footer %}
+<a href="{{ url_for('auth.shiftManagement') }}">🏠 Dashboard</a> | <a href="#">📞 Support</a>
+{% endblock %}

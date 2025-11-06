@@ -15,7 +15,7 @@
         <div class="navbar-content">
             <a href="{{ url_for('auth.shiftManagement') }}" class="navbar-brand">Colby Shift Management</a>
             <ul class="navbar-menu">
-                <li><a href="{{ url_for('availability.index') }}">Availability</a></li>
+                <li><a href="{{ url_for('availability.availability') }}">Availability</a></li>
                 <li><a href="{{ url_for('staffing.index') }}">Staffing</a></li>
                 <li><a href="{{ url_for('constraints.index') }}">Constraints</a></li>
                 <li><a href="{{ url_for('scheduler.index') }}">Scheduler</a></li>
@@ -27,32 +27,31 @@
     {% endif %}
 
     <div class="page-content">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="login-header">
-                    <h1>{% block header_title %}Colby Shift Management{% endblock %}</h1>
-                    <p>{% block header_subtitle %}{% endblock %}</p>
-                </div>
-
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="flash-messages">
-                            {% for category, message in messages %}
-                                <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-
-                {% block content %}{% endblock %}
-
-                <div class="login-footer">
-                    <p>{% block footer %}Need help? <a href="#">Contact support</a>{% endblock %}</p>
-                </div>
+        <div class="content-wrapper">
+            <div class="page-header">
+                <h1>{% block header_title %}Colby Shift Management{% endblock %}</h1>
+                <p>{% block header_subtitle %}{% endblock %}</p>
             </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+            {% if self.footer() %}
+            <div class="page-footer">
+                <p>{% block footer %}Need help? <a href="#">Contact support</a>{% endblock %}</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </body>
 
 </html>
-

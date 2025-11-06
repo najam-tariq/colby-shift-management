@@ -34,7 +34,7 @@
 
 {% block content %}
 <div class="dashboard-options">
-    <a href="{{ url_for('availability.index') }}" class="dashboard-btn secondary">
+    <a href="{{ url_for('availability.availability') }}" class="dashboard-btn secondary">
         <div class="btn-content">
             <h3>Availability</h3>
             <p>Manage employee availability</p>
@@ -69,7 +69,7 @@
         </div>
     </a>
 
-    <div class="dashboard-btn secondary">
+    <div class="dashboard-btn secondary" >
         <div class="btn-content">
             <h3>Your Profile</h3>
             <p>Email: {{ current_user.email }}</p>
@@ -77,12 +77,7 @@
         </div>
     </div>
 
-    <a href="{{ url_for('availability.availability') }}" class="dashboard-btn accent">
-        <div class="btn-content">
-            <h3>Enter Availability</h3>
-            <p>Submit your work hours or scheduling preferences</p>
-        </div>
-    </a>
+   
 </div>
 {% endblock %}
 

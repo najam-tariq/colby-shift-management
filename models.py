@@ -83,9 +83,27 @@ class Policy(db.Model):
     
     term = db.relationship('Term', back_populates='policies')
     updated_by_user = db.relationship('User', back_populates='policies_updated')
+    undesirable_windows = db.relationship('UndesirableTimeWindow', back_populates='policy', cascade='all, delete')
     
     def __repr__(self):
         return f'<Policy {self.policy_id} for Term {self.term_id}>'
+
+class UndesirableTimeWindow(db.Model):
+    __tablename__ = 'undesirable_time_windows'
+    
+    window_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    policy_id = db.Column(db.Integer, db.ForeignKey('policy.policy_id'), nullable=False)
+    name = db.Column(db.Text, nullable=False)  # e.g., "Early Morning", "Late Evening", "Weekend"
+    day_of_week = db.Column(db.Integer, nullable=True)  # 0-6 for Mon-Sun, NULL for all days
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    weight = db.Column(db.Float, nullable=False, default=1.0)  # Higher weight = more undesirable
+    window_type = db.Column(db.Text, nullable=False)  # "early_morning", "late_evening", "weekend", "custom"
+    
+    policy = db.relationship('Policy', back_populates='undesirable_windows')
+    
+    def __repr__(self):
+        return f'<UndesirableTimeWindow {self.name} for Policy {self.policy_id}>'
 
 class StaffingNeeds(db.Model):
     __tablename__ = 'staffing_needs'

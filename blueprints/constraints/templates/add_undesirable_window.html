@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Add Undesirable Time Window - Constraints & Equity{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0,123,255,0.3);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+    text-decoration: none;
+    color: white;
+}
+
+.weight-examples {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.weight-examples h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+}
+
+.weight-examples ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.time-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 600px) {
+    .time-inputs {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Add Undesirable Time Window{% endblock %}
+{% block header_subtitle %}Define a new time period to avoid when scheduling shifts{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="policy_id">Policy (Term):</label>
+            <select id="policy_id" name="policy_id" required>
+                <option value="">Select a policy...</option>
+                {% for policy in policies %}
+                    <option value="{{ policy.policy_id }}">{{ policy.term.name }} (Policy #{{ policy.policy_id }})</option>
+                {% endfor %}
+            </select>
+            <small>Choose which term/policy this undesirable window applies to</small>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Window Name:</label>
+            <input type="text" id="name" name="name" required placeholder="e.g., Early Morning Shifts">
+            <small>A descriptive name for this undesirable time window</small>
+        </div>
+
+        <div class="form-group">
+            <label for="window_type">Window Type:</label>
+            <select id="window_type" name="window_type" required>
+                <option value="">Select type...</option>
+                <option value="early_morning">Early Morning</option>
+                <option value="late_evening">Late Evening</option>
+                <option value="weekend">Weekend</option>
+                <option value="custom">Custom</option>
+            </select>
+            <small>Choose the category that best describes this time window</small>
+        </div>
+
+        <div class="form-group">
+            <label for="day_of_week">Day of Week (optional):</label>
+            <select id="day_of_week" name="day_of_week">
+                <option value="">All days</option>
+                <option value="0">Monday</option>
+                <option value="1">Tuesday</option>
+                <option value="2">Wednesday</option>
+                <option value="3">Thursday</option>
+                <option value="4">Friday</option>
+                <option value="5">Saturday</option>
+                <option value="6">Sunday</option>
+            </select>
+            <small>Leave empty to apply to all days, or select a specific day</small>
+        </div>
+
+        <div class="form-group">
+            <label>Time Range:</label>
+            <div class="time-inputs">
+                <div>
+                    <input type="time" id="start_time" name="start_time" required>
+                    <small>Start time</small>
+                </div>
+                <div>
+                    <input type="time" id="end_time" name="end_time" required>
+                    <small>End time</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">Undesirability Weight:</label>
+            <input type="number" id="weight" name="weight" min="0.1" max="10" step="0.1" value="1.0" required>
+            <small>Higher numbers indicate more undesirable time periods</small>
+            
+            <div class="weight-examples">
+                <h4>Weight Guidelines:</h4>
+                <ul>
+                    <li><strong>1.0:</strong> Slightly undesirable</li>
+                    <li><strong>2.0:</strong> Moderately undesirable</li>
+                    <li><strong>3.0:</strong> Highly undesirable</li>
+                    <li><strong>5.0+:</strong> Extremely undesirable</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Add Undesirable Window</button>
+            <a href="{{ url_for('constraints.undesirable_windows') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('constraints.undesirable_windows') }}">← Back to Undesirable Windows</a>
+{% endblock %}

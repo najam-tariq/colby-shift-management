@@ -26,6 +26,14 @@
         </div>
     </div>
 </div>
+<a href="{{ url_for('availability.availability') }}" class="dashboard-btn accent">
+        <div class="btn-content">
+            <h3>Enter Availability</h3>
+            <p>Submit your work hours or scheduling preferences</p>
+        </div>
+    </a>
+</div>
+
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.logout') }}">Sign out</a> | <a href="#">Help & Support</a>{% endblock %}

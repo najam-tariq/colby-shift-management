@@ -3,21 +3,116 @@
 {% block title %}Availability Management - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('availability.static', filename='availability.css') }}">
 {% endblock %}
 
-{% block header_title %}Availability & Inputs{% endblock %}
-{% block header_subtitle %}Manage student availability, templates, and submission deadlines{% endblock %}
+
 
 {% block content %}
-<div class="dashboard-options">
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>GitHub Issues #1-12</h3>
-            <p>CSV import, templates, deadlines, weekly grid, audit trail, etc.</p>
+<div style = "padding: 5px"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Availability - Colby Shift Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='availability.css') }}">
+</head>
+
+<body>
+    <div class="availability-container">
+        <div class="availability-card">
+            <h1>Weekly Availability</h1>
+            <p class="subtitle">Add or update availability for each student below</p>
+
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" enctype="multipart/form-data" class="availability-form">
+                <!-- Upload CSV -->
+                <div class="upload-section">
+                    <div class="upload-left">
+                        <input type="file" name="csv_file" accept=".csv">
+                        <button type="submit" name="action" value="upload" class="upload-btn">Upload CSV</button>
+                    </div>
+
+                    <!-- Collapsible CSV Format Guide -->
+                    <div class="csv-guide-container">
+                        <button type="button" id="toggleGuideBtn" class="guide-toggle-btn">📘 CSV Format Guide</button>
+                        <div id="csvGuide" class="csv-guide" style="display: none;">
+                            <h3>CSV Format Guide</h3>
+                            <p>Your CSV file should have the following column headers:</p>
+                            <pre>
+name,day_of_week,start_time,end_time
+John Doe,Monday,09:00,17:00
+Jane Smith,Tuesday,13:00,17:30
+                            </pre>
+                            <p><strong>Notes:</strong></p>
+                            <ul>
+                                <li><code>day_of_week</code> must be one of: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.</li>
+                                <li>Times must be in 24-hour format (<code>HH:MM</code>).</li>
+                                <li>Each row represents one availability block.</li>
+                                <div style = "padding: 5px"></div>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Availability table -->
+                <table class="availability-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Mon</th><th>Tue</th><th>Wed</th>
+                            <th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student, days in availability_data.items() %}
+                        <tr>
+                            <td><input type="text" name="student_name[]" value="{{ student }}" readonly></td>
+                            {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+                                <td><input type="text" name="{{ d }}[]" value="{{ days[d] }}"></td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- New entry row -->
+                        <tr>
+                            <td><input type="text" name="student_name[]" placeholder="New student name"></td>
+                            {% for d in ['mon','tue','wed','thu','fri','sat','sun'] %}
+                            <td><input type="text" name="{{ d }}[]" placeholder="e.g. 9am-5pm"></td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="form-actions">
+                    <button type="submit" name="action" value="update" class="update-btn">Update Availability</button>
+                    <a href="{{ url_for('auth.shiftManagement') }}" class="back-btn">Back to Dashboard</a>
+                </div>
+            </form>
         </div>
     </div>
-</div>
+
+    <!-- Toggle Script -->
+    <script>
+        document.getElementById('toggleGuideBtn').addEventListener('click', function() {
+            const guide = document.getElementById('csvGuide');
+            const isHidden = guide.style.display === 'none';
+            guide.style.display = isHidden ? 'block' : 'none';
+            this.textContent = isHidden ? '📘 Hide CSV Guide' : '📘 CSV Format Guide';
+        });
+    </script>
+
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}

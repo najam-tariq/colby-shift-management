@@ -101,6 +101,17 @@ body {
     color: #666;
 }
 
+.dashboard-btn.accent {
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+    color: white;
+    border: none;
+}
+
+.dashboard-btn.accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(67, 206, 162, 0.4);
+}
+
 /* Footer */
 .login-footer {
     margin-top: 25px;

@@ -9,5 +9,3 @@ scheduler_bp = Blueprint(
     static_url_path='/scheduler/static'
 )
 
-from . import routes
-

@@ -9,5 +9,3 @@ staffing_bp = Blueprint(
     static_url_path='/staffing/static'
 )
 
-from . import routes
-

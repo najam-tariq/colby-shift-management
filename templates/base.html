@@ -10,7 +10,7 @@
 </head>
 
 <body>
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and request.endpoint != 'auth.shiftManagement' %}
     <nav class="navbar">
         <div class="navbar-content">
             <a href="{{ url_for('auth.shiftManagement') }}" class="navbar-brand">Colby Shift Management</a>

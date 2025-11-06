@@ -8,5 +8,3 @@ auth_bp = Blueprint(
     static_url_path='/auth/static'
 )
 
-from . import routes
-

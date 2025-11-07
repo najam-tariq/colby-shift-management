@@ -21,14 +21,26 @@
             </div>
         </a>
         
-        <a href="https://calendar.google.com/calendar/r?cid={{ ('webcal://' + request.host + url_for('outputs.export_ical_student', token=current_user.calendar_token)) | urlencode }}" 
-           class="dashboard-btn"
-           target="_blank">
-            <div class="btn-content">
-                <h3>📅 Add to Google Calendar</h3>
-                <p>Subscribe to your auto-updating shift calendar</p>
-            </div>
-        </a>
+        {# Row: Google Calendar + Web View #}
+        <div class="dashboard-row">
+            <a href="https://calendar.google.com/calendar/r?cid={{ ('webcal://' + request.host + url_for('outputs.export_ical_student', token=current_user.calendar_token)) | urlencode }}" 
+               class="dashboard-btn"
+               target="_blank">
+                <div class="btn-content">
+                    <h3>📅 Add to Google Calendar</h3>
+                    <p>Subscribe to your auto-updating shift calendar</p>
+                </div>
+            </a>
+            
+            <a href="{{ url_for('outputs.public_schedule_view', token=current_user.calendar_token) }}" 
+               class="dashboard-btn"
+               target="_blank">
+                <div class="btn-content">
+                    <h3>🌐 See Web View</h3>
+                    <p>View your schedule in a shareable web page</p>
+                </div>
+            </a>
+        </div>
     </div>
 {% else %}
     {# Supervisor View - Show all options #}

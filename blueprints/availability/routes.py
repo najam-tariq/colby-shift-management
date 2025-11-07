@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import current_user
 from . import availability_bp
-from models import db, User, Availability
+from models import db, User, Availability, Term
 import requests
 import csv
 import io
@@ -13,6 +13,17 @@ from datetime import datetime
 
 @availability_bp.route('/', methods=['GET', 'POST'])
 def availability():
+    # Term selection similar to staffing: query param term_id selects active term, else latest
+    selected_term_id = request.args.get('term_id', type=int)
+    available_terms = Term.query.order_by(Term.start_date.desc()).all()
+    if selected_term_id:
+        active_term = Term.query.get(selected_term_id)
+    else:
+        active_term = available_terms[0] if available_terms else None
+    if not active_term:
+        # No term exists yet; instruct user to create one on staffing page
+        return redirect(url_for('staffing.index'))
+
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -23,7 +34,7 @@ def availability():
             file = request.files.get('csv_file')
             if not file or not file.filename.endswith('.csv'):
                 flash('Please upload a valid CSV file.', 'error')
-                return redirect(url_for('availability.availability'))
+                return redirect(url_for('availability.availability', term_id=active_term.term_id))
 
             try:
                 stream = io.StringIO(file.stream.read().decode('UTF8'))
@@ -42,6 +53,7 @@ def availability():
 
                     new_avail = Availability(
                         user_id=user.user_id,
+                        term_id=active_term.term_id,
                         day_of_week=day,
                         start_time=start_time,
                         end_time=end_time
@@ -55,7 +67,7 @@ def availability():
                 db.session.rollback()
                 flash(f'Error uploading CSV: {e}', 'error')
 
-            return redirect(url_for('availability.availability'))
+            return redirect(url_for('availability.availability', term_id=active_term.term_id))
 
         # -------------------
         # MANUAL UPDATES
@@ -76,7 +88,7 @@ def availability():
                     for day in days:
                         block = request.form.getlist(f'{day}[]')[i]
                         if not block.strip():
-                            Availability.query.filter_by(user_id=user.user_id, day_of_week=day.capitalize()[:3]).delete()
+                            Availability.query.filter_by(user_id=user.user_id, term_id=active_term.term_id, day_of_week=day.capitalize()[:3]).delete()
                             continue
 
                         try:
@@ -92,10 +104,11 @@ def availability():
                             except ValueError:
                                 end_time = datetime.strptime(end, '%I%p').time()
 
-                            Availability.query.filter_by(user_id=user.user_id, day_of_week=day.capitalize()[:3]).delete()
+                            Availability.query.filter_by(user_id=user.user_id, term_id=active_term.term_id, day_of_week=day.capitalize()[:3]).delete()
 
                             new_avail = Availability(
                                 user_id=user.user_id,
+                                term_id=active_term.term_id,
                                 day_of_week=day.capitalize()[:3],
                                 start_time=start_time,
                                 end_time=end_time
@@ -112,15 +125,17 @@ def availability():
                 db.session.rollback()
                 flash(f'Error updating availability: {e}', 'error')
 
-        return redirect(url_for('availability.availability'))
+        # After any POST, redirect to preserve PRG pattern
+        return redirect(url_for('availability.availability', term_id=active_term.term_id))
 
     # -------------------
     # GET REQUEST — SHOW CURRENT AVAILABILITY
     # -------------------
+    # Filter availability by active term
     if current_user.role.lower() == 'supervisor':
-        all_availability = Availability.query.join(User).all()
+        all_availability = Availability.query.join(User).filter(Availability.term_id == active_term.term_id).all()
     else:
-        all_availability = Availability.query.filter_by(user_id=current_user.user_id).all()
+        all_availability = Availability.query.filter_by(user_id=current_user.user_id, term_id=active_term.term_id).all()
 
 
 
@@ -136,7 +151,15 @@ def availability():
         end_str = a.end_time.strftime("%I:%M %p").lstrip("0")
         availability_data[user.name][day_key] = f"{start_str} - {end_str}" if a.start_time and a.end_time else ""
         print(availability_data)
-    return render_template('availability_index.html', availability_data=availability_data)
+    return render_template('availability_index.html', availability_data=availability_data, active_term=active_term, available_terms=available_terms)
+
+
+
+
+    return render_template('availability_index.html',
+                           availability_data=availability_data,
+                           active_term=active_term,
+                           available_terms=available_terms)
 
 
 

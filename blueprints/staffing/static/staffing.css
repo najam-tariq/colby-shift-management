@@ -849,6 +849,62 @@ body {
     font-size: 0.85rem;
 }
 
+/* Gap Dashboard Styles */
+.gap-dashboard {
+    margin-top: 2.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f5f7ff 100%);
+    border: 2px solid #e1e8ed;
+    border-radius: 14px;
+    padding: 1.25rem 1.25rem 1.5rem;
+    box-shadow: 0 4px 16px rgba(118,75,162,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+.gap-dashboard:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(118,75,162,0.15), transparent 60%);
+    pointer-events: none;
+}
+.gap-dashboard h3 {
+    margin: 0 0 0.4rem 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #2c3e50;
+}
+.dashboard-sub {margin:0 0 1.1rem 0; font-size:0.75rem; letter-spacing:0.5px; font-weight:600; text-transform:uppercase; color:#667eea;}
+.gap-table {width:100%; border-collapse:collapse;}
+.gap-table thead th {background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding:0.7rem 0.75rem; border:none;}
+.gap-table tbody tr {background:#fff; transition:background-color .2s ease;}
+.gap-table tbody tr:hover {background:#f8f9fa;}
+.gap-table td {padding:0.6rem 0.75rem; font-size:0.75rem; vertical-align:top; border-bottom:1px solid #e9ecef;}
+.gap-table tbody tr:last-child td {border-bottom:none;}
+.sev-badge {display:inline-flex; align-items:center; gap:4px; padding:0.3rem 0.55rem; border-radius:4px; font-size:0.6rem; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; box-shadow:0 0 0 1px rgba(0,0,0,0.05) inset;}
+.sev-badge.critical {background:#b30000; color:#fff; box-shadow:0 0 0 1px #8a0000 inset;}
+.sev-badge.high {background:#d97706; color:#fff; box-shadow:0 0 0 1px #b45309 inset;}
+.sev-badge.medium {background:#2563eb; color:#fff; box-shadow:0 0 0 1px #1d4ed8 inset;}
+.sev-badge.low {background:#4b5563; color:#fff; box-shadow:0 0 0 1px #374151 inset;}
+.reason-list, .suggestion-list {list-style:disc; margin:0; padding-left:1rem;}
+.reason-list li, .suggestion-list li {margin:0.15rem 0; line-height:1.2;}
+.severity-critical {border-left:4px solid #b30000;}
+.severity-high {border-left:4px solid #d97706;}
+.severity-medium {border-left:4px solid #2563eb;}
+.severity-low {border-left:4px solid #4b5563;}
+.no-gaps {margin-top:2.5rem; background:#f0fdf4; border:2px solid #bbf7d0; padding:1.1rem 1.2rem; border-radius:12px; font-size:0.8rem; font-weight:600; color:#065f46; display:flex; align-items:center; gap:0.6rem;}
+.gap-toggle-btn {position:absolute; top:1rem; right:1rem; background:#667eea; color:#fff; border:none; padding:0.45rem 0.75rem; font-size:0.65rem; font-weight:600; border-radius:6px; cursor:pointer; letter-spacing:0.5px; box-shadow:0 2px 6px rgba(102,126,234,0.3);}
+.gap-toggle-btn:hover {background:#5a67d8;}
+@media (max-width: 900px){
+  .gap-table thead {display:none;}
+  .gap-table tbody tr {display:grid; grid-template-columns:repeat(2,1fr); row-gap:0.35rem; padding:0.6rem 0.5rem;}
+  .gap-table td {border:none !important; background:transparent; padding:0.15rem 0.3rem;}
+  .gap-table tbody tr td:first-child, .gap-table tbody tr td:last-child {border-radius:0;}
+  .sev-badge {font-size:0.5rem;}
+}
+
 /* Responsive term management */
 @media (max-width: 768px) {
     .term-management-section {
@@ -905,3 +961,5 @@ body {
         margin-top: 0.5rem;
     }
 }
+
+/* Remove duplicate legacy gap-dashboard styles at file end (clean-up) */

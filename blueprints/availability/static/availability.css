@@ -764,3 +764,59 @@ input[type="file"] {
     .page-header {
         display: none;
     }
+
+/* Term selection styles (aligned with staffing page aesthetics) */
+.term-selector-section {
+    background: #fff;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.term-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.term-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+    margin: 0;
+}
+.term-dropdown {
+    padding: 0.6rem 0.9rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.9rem;
+    min-width: 260px;
+    cursor: pointer;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+.term-dropdown:hover {
+    border-color: #667eea;
+}
+.term-dropdown:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+}
+.no-terms-message {
+    background: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    flex: 1 1 100%;
+    font-weight: 600;
+}
+@media (max-width: 768px){
+    .term-selector-section {flex-direction: column; align-items: flex-start;}
+    .term-dropdown {min-width: 100%;}
+}

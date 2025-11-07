@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}All Student Schedules{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='outputs.css') }}">
+{% endblock %}
+
+{% block header_title %}All Student Schedules{% endblock %}
+{% block header_subtitle %}View individual schedules for each student{% endblock %}
+
+{% block content %}
+<div class="header-section">
+    <h2>📊 Student Overview</h2>
+    <p>{{ students_with_counts|length }} students with active schedules</p>
+</div>
+
+<!-- Week Navigation -->
+{% if all_weeks %}
+<div class="week-navigation">
+    <a href="{{ url_for('outputs.all_students_view', search=search_query, filter=shift_filter, week=week_index-1) }}" 
+       class="nav-btn"
+       {% if week_index == 0 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        ← Previous Week
+    </a>
+    
+    <div class="week-title">
+        <div style="margin-bottom: 0.5rem;">📅 {{ current_week_start.strftime('%b %d') }} - {{ current_week_end.strftime('%b %d, %Y') }}</div>
+        <div style="font-size: 0.9rem; color: #666; font-weight: normal;">
+            Showing weekly data for all students
+        </div>
+    </div>
+    
+    <a href="{{ url_for('outputs.all_students_view', search=search_query, filter=shift_filter, week=week_index+1) }}" 
+       class="nav-btn"
+       {% if week_index >= all_weeks|length - 1 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        Next Week →
+    </a>
+</div>
+{% endif %}
+
+<!-- Search and Filter Controls -->
+<div class="filter-controls">
+    <form method="GET" action="{{ url_for('outputs.all_students_view') }}" class="filter-form">
+        <div class="search-box">
+            <input type="text" 
+                   name="search" 
+                   placeholder="Search by name or email..." 
+                   value="{{ search_query }}"
+                   class="search-input">
+            <button type="submit" class="search-btn">🔍 Search</button>
+        </div>
+        
+        <div class="filter-box">
+            <label for="filter">Filter by shifts:</label>
+            <select name="filter" id="filter" class="filter-select" onchange="this.form.submit()">
+                <option value="all" {% if shift_filter == 'all' %}selected{% endif %}>All Students</option>
+                <option value="0-5" {% if shift_filter == '0-5' %}selected{% endif %}>0-5 shifts</option>
+                <option value="6-10" {% if shift_filter == '6-10' %}selected{% endif %}>6-10 shifts</option>
+                <option value="11+" {% if shift_filter == '11+' %}selected{% endif %}>11+ shifts</option>
+            </select>
+        </div>
+        
+        {% if search_query or shift_filter != 'all' %}
+        <a href="{{ url_for('outputs.all_students_view') }}" class="clear-filters-btn">Clear Filters</a>
+        {% endif %}
+    </form>
+    
+    <!-- Comparison Controls -->
+    <div class="comparison-controls">
+        <button id="compareBtn" class="compare-btn" onclick="compareSelected()" disabled>
+            Compare Selected (0/3)
+        </button>
+    </div>
+</div>
+
+<script>
+function compareSelected() {
+    const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    if (ids.length > 0 && ids.length <= 3) {
+        window.location.href = "{{ url_for('outputs.compare_students') }}?ids=" + ids.join(',');
+    }
+}
+
+function updateCompareButton() {
+    const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+    const count = checkboxes.length;
+    const btn = document.getElementById('compareBtn');
+    btn.textContent = `Compare Selected (${count}/3)`;
+    btn.disabled = count === 0 || count > 3;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.student-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateCompareButton);
+    });
+});
+</script>
+
+<div class="students-grid">
+    {% for item in students_with_counts %}
+    {% set student = item['student'] %}
+    {% set shift_count = item['shift_count'] %}
+    {% set weekly_hours = item['weekly_hours'] %}
+    
+    <div class="student-card-wrapper">
+        <div class="compare-checkbox">
+            <input type="checkbox" 
+                   class="student-checkbox" 
+                   value="{{ student.user_id }}" 
+                   id="student_{{ student.user_id }}">
+            <label for="student_{{ student.user_id }}" class="checkbox-label">Compare</label>
+        </div>
+        <div class="student-card">
+            <div class="student-name">{{ student.name }}</div>
+            <div class="student-email">{{ student.email }}</div>
+            
+            <div class="student-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ shift_count }}</div>
+                    <div class="stat-label">This Week Shifts</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.1f"|format(weekly_hours) }}</div>
+                    <div class="stat-label">This Week Hours</div>
+                </div>
+            </div>
+            
+            <div class="card-actions">
+                <a href="{{ url_for('outputs.student_view', user_id=student.user_id) }}" class="view-link">
+                    View Schedule →
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-results">
+        <h3>No students found</h3>
+        <p>Try adjusting your search or filter criteria.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('outputs.index') }}">← Back to Outputs</a> |
+<a href="{{ url_for('outputs.preview') }}">← Combined View</a>
+{% endblock %}
+

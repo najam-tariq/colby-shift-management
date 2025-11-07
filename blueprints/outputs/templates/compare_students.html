@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Students - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='outputs.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='student_view.css') }}">
+{% endblock %}
+
+{% block header_title %}Compare Student Schedules{% endblock %}
+{% block header_subtitle %}Side-by-side schedule comparison{% endblock %}
+
+{% block content %}
+<div class="comparison-header">
+    <h2>Comparing {{ students_data|length }} Student{{ 's' if students_data|length > 1 else '' }}</h2>
+</div>
+
+<!-- Student Summary Cards -->
+<div class="comparison-summary">
+    {% for data in students_data %}
+    <div class="summary-card">
+        <h3>{{ data.student.name }}</h3>
+        <p class="summary-email">{{ data.student.email }}</p>
+        <div class="summary-stats">
+            <div><strong>{{ data.weekly_shift_count }}</strong> shifts this week</div>
+            <div><strong>{{ "%.1f"|format(data.weekly_hours) }}</strong> hours this week</div>
+            <div><strong>{{ data.all_weeks|length }}</strong> total weeks</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if students_data and students_data[0].all_weeks %}
+{% set max_weeks = students_data | map(attribute='all_weeks') | map('length') | max %}
+{% set week_index_safe = [week_index, max_weeks - 1] | min if max_weeks > 0 else 0 %}
+
+<!-- Week Navigation -->
+<div class="week-navigation">
+    <a href="?ids={{ request.args.get('ids') }}&week={{ week_index - 1 }}" 
+       class="nav-btn"
+       {% if week_index == 0 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        ← Previous Week
+    </a>
+    
+    <div class="week-title">
+        {% if students_data[0].all_weeks and week_index < students_data[0].all_weeks|length %}
+        📅 {{ students_data[0].all_weeks[week_index].week_start.strftime('%b %d') }} - 
+        {{ students_data[0].all_weeks[week_index].week_end.strftime('%b %d, %Y') }}
+        {% endif %}
+    </div>
+    
+    <a href="?ids={{ request.args.get('ids') }}&week={{ week_index + 1 }}" 
+       class="nav-btn"
+       {% if week_index >= max_weeks - 1 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        Next Week →
+    </a>
+</div>
+
+<!-- Side-by-side Schedule Comparison -->
+<div class="comparison-grid">
+    {% for data in students_data %}
+    <div class="comparison-column">
+        <div class="column-header">
+            <h3>{{ data.student.name }}</h3>
+        </div>
+        
+        {% if data.all_weeks and week_index < data.all_weeks|length %}
+        {% set current_week = data.all_weeks[week_index] %}
+        
+        <div class="week-schedule">
+            {% for day_date in current_week.week_dates %}
+            <div class="day-block">
+                <div class="day-header">
+                    <strong>{{ day_date.strftime('%A') }}</strong>
+                    <span class="day-date">{{ day_date.strftime('%b %d') }}</span>
+                </div>
+                
+                {% set day_shifts = current_week.shifts | selectattr('date', 'equalto', day_date) | list %}
+                {% if day_shifts %}
+                    <div class="shifts-list">
+                        {% for shift in day_shifts %}
+                        {% set duration = ((shift.end_time.hour * 60 + shift.end_time.minute) - (shift.start_time.hour * 60 + shift.start_time.minute)) / 60 %}
+                        <div class="shift-item">
+                            <div class="shift-time">{{ shift.start_time.strftime('%I:%M %p') }} - {{ shift.end_time.strftime('%I:%M %p') }}</div>
+                            <div class="shift-duration">{{ "%.1f"|format(duration) }}h</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-shift">No shifts</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data">No schedule data for this week</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="week-counter">
+    Week {{ week_index + 1 }} of {{ max_weeks }}
+</div>
+
+{% else %}
+<div class="no-schedule">
+    <h3>No shifts scheduled</h3>
+    <p>These students don't have any shifts scheduled yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('outputs.all_students_view') }}">← Back to All Students</a>
+{% endblock %}
+

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Preview{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='outputs.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='preview.css') }}">
+{% endblock %}
+
+{% block header_title %}Schedule Preview{% endblock %}
+{% block header_subtitle %}View all student schedules with constraint validation{% endblock %}
+
+{% block content %}
+{% if term %}
+<div class="preview-header">
+    <h2>{{ term.name }}</h2>
+    <p>{{ term.start_date }} to {{ term.end_date }}</p>
+</div>
+
+{% if policy %}
+<div class="policy-info">
+    <h3>⚙️ Active Constraints:</h3>
+    <ul>
+        <li>Shift length: {{ policy.min_shift_length }} - {{ policy.max_shift_length }} hours</li>
+        <li>Break length: {{ policy.min_break_length }} - {{ policy.max_break_length }} hours</li>
+        <li>Undesirable times: Before {{ policy.undesireable_start }}:00 or after {{ policy.undesireable_end }}:00</li>
+    </ul>
+</div>
+{% endif %}
+
+<div class="legend">
+    <div class="legend-item">
+        <div class="legend-box" style="background: #28a745;"></div>
+        <span>Valid Shift</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-box" style="background: #ffc107;"></div>
+        <span>Warning (Undesirable time)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-box" style="background: #dc3545;"></div>
+        <span>Constraint Violation</span>
+    </div>
+</div>
+
+{% if current_week %}
+<!-- Week Navigation -->
+<div class="week-navigation">
+    <a href="{{ url_for('outputs.preview', week=week_index-1) }}" 
+       class="nav-btn {% if week_index == 0 %}disabled{% endif %}"
+       {% if week_index == 0 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        ← Previous Week
+    </a>
+    
+    <div class="week-title">
+        📅 {{ current_week.week_start.strftime('%b %d') }} - {{ current_week.week_end.strftime('%b %d, %Y') }}
+    </div>
+    
+    <a href="{{ url_for('outputs.preview', week=week_index+1) }}" 
+       class="nav-btn {% if week_index >= all_weeks|length - 1 %}disabled{% endif %}"
+       {% if week_index >= all_weeks|length - 1 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        Next Week →
+    </a>
+</div>
+
+<!-- Time Grid Calendar -->
+<div class="time-grid-container">
+    <div class="time-grid-wrapper">
+        <!-- Calendar Header -->
+        <div class="calendar-header">
+            <div class="time-gutter">
+                <span class="gmt-label">GMT-05</span>
+            </div>
+            {% for day_date in current_week.week_dates %}
+            <div class="day-column-header">
+                <div class="day-name">{{ day_date.strftime('%a').upper() }}</div>
+                <div class="day-number">{{ day_date.day }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Calendar Body -->
+        <div class="calendar-body">
+            <!-- Time Column -->
+            <div class="time-column">
+                {% for hour in range(8, 22) %}
+                <div class="time-marker">
+                    <span class="time-text">{{ hour }}:00</span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Days Grid -->
+            <div class="days-grid">
+                {% for day_date in current_week.week_dates %}
+                <div class="day-column">
+                    <!-- Hour lines -->
+                    {% for hour in range(8, 22) %}
+                    <div class="hour-row"></div>
+                    {% endfor %}
+                    
+                    <!-- Shifts for this day -->
+                    {% set day_shifts = current_week.days.get(day_date, []) %}
+                    {% for shift_data in day_shifts %}
+                        {% set shift = shift_data.shift %}
+                        {% set start_hour = shift.start_time.hour %}
+                        {% set end_hour = shift.end_time.hour %}
+                        {% set start_minute = shift.start_time.minute %}
+                        {% set end_minute = shift.end_time.minute %}
+                        
+                        {# Calculate exact position in minutes from start time (8:00 AM) #}
+                        {% set start_minutes = (start_hour - 8) * 60 + start_minute %}
+                        {% set end_minutes = (end_hour - 8) * 60 + end_minute %}
+                        {% set duration_minutes = end_minutes - start_minutes %}
+                        
+                        {# Get overlap info from backend calculation #}
+                        {% set has_overlap = shift_data.get('has_overlap', False) %}
+                        {% set overlap_position = shift_data.get('overlap_position', 0) %}
+                        
+                        {# Calculate top position and height (each hour = 60px) #}
+                        {% set top_px = start_minutes %}
+                        {% set height_px = duration_minutes %}
+                        
+                        <div class="shift-card {% if not shift_data.constraint_passed %}constraint-fail{% elif shift_data.warnings %}warning{% endif %}"
+                             style="top: {{ top_px }}px; 
+                                    height: {{ height_px }}px;
+                                    {% if has_overlap %}
+                                        width: calc(50% - 2px);
+                                        {% if overlap_position == 1 %}left: calc(50% + 2px);{% else %}left: 2px;{% endif %}
+                                    {% else %}
+                                        left: 2px;
+                                        right: 2px;
+                                    {% endif %}"
+                             data-shift-id="{{ shift.shift_id }}"
+                             data-user-id="{{ shift.user.user_id }}"
+                             data-shift-name="{{ shift.user.name }}"
+                             data-shift-email="{{ shift.user.email }}"
+                             data-shift-date="{{ day_date.strftime('%A, %B %d, %Y') }}"
+                             data-shift-start="{{ shift.start_time.strftime('%I:%M %p') }}"
+                             data-shift-end="{{ shift.end_time.strftime('%I:%M %p') }}"
+                             data-shift-duration="{{ "%.1f"|format(shift_data.duration) }}"
+                             data-shift-status="{% if not shift_data.constraint_passed %}fail{% elif shift_data.warnings %}warning{% else %}valid{% endif %}"
+                             data-shift-warnings="{{ ', '.join(shift_data.warnings) if shift_data.warnings else '' }}"
+                             data-shift-manual="{{ 'true' if shift.was_manually_adjusted else 'false' }}"
+                             onclick="openShiftDialog(this)">
+                            <div class="shift-content">
+                                <div class="shift-title">
+                                    {{ shift.user.name.split()[0] }}
+                                    {% if shift.was_manually_adjusted %}<span class="manual-badge">✏️</span>{% endif %}
+                                </div>
+                                <div class="shift-time-range">
+                                    {{ shift.start_time.strftime('%-I:%M') }}{% if shift.start_time.hour < 12 %}am{% else %}pm{% endif %} - {{ shift.end_time.strftime('%-I:%M') }}{% if shift.end_time.hour < 12 %}am{% else %}pm{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="week-counter">
+    Week {{ week_index + 1 }} of {{ all_weeks|length }}
+</div>
+
+<!-- Shift Dialog Popup -->
+<div id="shiftDialogOverlay" class="shift-dialog-overlay" onclick="closeShiftDialog(event)">
+    <div class="shift-dialog" onclick="event.stopPropagation()">
+        <div class="shift-dialog-header">
+            <div class="shift-dialog-title-section">
+                <h2 class="shift-dialog-title" id="dialogShiftName"></h2>
+                <p class="shift-dialog-subtitle" id="dialogShiftDate"></p>
+            </div>
+            <button class="shift-dialog-close" onclick="closeShiftDialog()">&times;</button>
+        </div>
+        
+        <div class="shift-dialog-content">
+            <div class="shift-info-row">
+                <div class="shift-info-icon">🕐</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Time</div>
+                    <div class="shift-info-value" id="dialogShiftTime"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row">
+                <div class="shift-info-icon">⏱️</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Duration</div>
+                    <div class="shift-info-value" id="dialogShiftDuration"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row">
+                <div class="shift-info-icon">📧</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Email</div>
+                    <div class="shift-info-value" id="dialogShiftEmail"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row">
+                <div class="shift-info-icon">✓</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Status</div>
+                    <div class="shift-info-value">
+                        <span class="shift-status-badge" id="dialogShiftStatus"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row" id="dialogWarningsRow" style="display: none;">
+                <div class="shift-info-icon">⚠️</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Warnings</div>
+                    <div class="shift-info-value" id="dialogShiftWarnings"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row" id="dialogManualRow" style="display: none;">
+                <div class="shift-info-icon">✏️</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Note</div>
+                    <div class="shift-info-value">This shift was manually adjusted</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="shift-dialog-actions">
+            <button class="shift-dialog-btn shift-dialog-btn-secondary" onclick="viewStudentSchedule()">
+                View Full Schedule
+            </button>
+            <button class="shift-dialog-btn shift-dialog-btn-primary" onclick="closeShiftDialog()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{% else %}
+    <div class="no-schedule">
+        <h3>No shifts scheduled</h3>
+        <p>There are no shifts scheduled for this term yet.</p>
+    </div>
+{% endif %}
+
+{% else %}
+<div class="no-schedule">
+    <h3>No term selected</h3>
+    <p>Please create a term first to view schedules.</p>
+</div>
+{% endif %}
+
+<script>
+let currentShiftId = null;
+
+function openShiftDialog(element) {
+    const overlay = document.getElementById('shiftDialogOverlay');
+    
+    // Get shift data from data attributes
+    currentShiftId = element.dataset.shiftId;
+    const name = element.dataset.shiftName;
+    const email = element.dataset.shiftEmail;
+    const date = element.dataset.shiftDate;
+    const startTime = element.dataset.shiftStart;
+    const endTime = element.dataset.shiftEnd;
+    const duration = element.dataset.shiftDuration;
+    const status = element.dataset.shiftStatus;
+    const warnings = element.dataset.shiftWarnings;
+    const isManual = element.dataset.shiftManual === 'true';
+    
+    // Populate dialog
+    document.getElementById('dialogShiftName').textContent = name;
+    document.getElementById('dialogShiftDate').textContent = date;
+    document.getElementById('dialogShiftTime').textContent = `${startTime} - ${endTime}`;
+    document.getElementById('dialogShiftDuration').textContent = `${duration} hours`;
+    document.getElementById('dialogShiftEmail').textContent = email;
+    
+    // Status badge
+    const statusBadge = document.getElementById('dialogShiftStatus');
+    statusBadge.className = `shift-status-badge ${status}`;
+    if (status === 'valid') {
+        statusBadge.textContent = 'Valid Shift';
+    } else if (status === 'warning') {
+        statusBadge.textContent = 'Has Warnings';
+    } else if (status === 'fail') {
+        statusBadge.textContent = 'Constraint Violation';
+    }
+    
+    // Warnings row
+    const warningsRow = document.getElementById('dialogWarningsRow');
+    if (warnings && warnings.trim()) {
+        warningsRow.style.display = 'flex';
+        document.getElementById('dialogShiftWarnings').textContent = warnings;
+    } else {
+        warningsRow.style.display = 'none';
+    }
+    
+    // Manual adjustment row
+    const manualRow = document.getElementById('dialogManualRow');
+    manualRow.style.display = isManual ? 'flex' : 'none';
+    
+    // Show dialog
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeShiftDialog(event) {
+    // Only close if clicking the overlay background or close button
+    if (!event || event.target.id === 'shiftDialogOverlay' || event.target.classList.contains('shift-dialog-close')) {
+        const overlay = document.getElementById('shiftDialogOverlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restore scrolling
+        currentShiftId = null;
+    }
+}
+
+function viewStudentSchedule() {
+    // Get the user ID from the shift
+    if (currentShiftId) {
+        // Extract user ID from the clicked shift card
+        const shiftCard = document.querySelector(`[data-shift-id="${currentShiftId}"]`);
+        if (shiftCard) {
+            const userId = shiftCard.dataset.userId;
+            if (userId) {
+                // Navigate to the student's schedule page
+                window.location.href = `/outputs/student/${userId}`;
+            }
+        }
+    }
+}
+
+// Close dialog on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeShiftDialog({ target: { id: 'shiftDialogOverlay' } });
+    }
+});
+</script>
+
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('outputs.index') }}">← Back to Outputs</a> |
+<a href="{{ url_for('outputs.export_csv') }}">Download CSV</a> |
+{% if term %}
+<a href="{{ url_for('outputs.export_ical') }}">Download iCal</a>
+{% endif %}
+{% endblock %}

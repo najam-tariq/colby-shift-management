@@ -4,21 +4,286 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='staffing/calendar.css') }}" type="text/css">
+<style>
+    .calendar-wrapper {
+        overflow-x: auto;
+        margin: 0 -20px;
+        padding: 0 20px;
+    }
+    
+    .calendar-grid {
+        min-width: 900px;
+        background: white;
+    }
+    
+    .calendar-cell {
+        height: 60px;
+    }
+    
+    @media (max-width: 768px) {
+        .calendar-grid {
+            min-width: 700px;
+        }
+        
+        .calendar-cell {
+            height: 50px;
+        }
+    }
+    
+    .time-block {
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .modal {
+        display: none;
+    }
+    
+    .modal[style*="display: block"] {
+        display: flex !important;
+    }
+</style>
 {% endblock %}
 
-{% block header_title %}Staffing Needs{% endblock %}
-{% block header_subtitle %}Define coverage windows, roles, and headcount requirements{% endblock %}
+{% block header_title %}Staffing Calendar{% endblock %}
+{% block header_subtitle %}Manage your staffing schedule with our interactive calendar{% endblock %}
 
 {% block content %}
-<div class="dashboard-options">
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>GitHub Issues #13-20</h3>
-            <p>Coverage windows, role requirements, staffing templates, validation, etc.</p>
+<div class="calendar-container">
+    <div class="calendar-header">
+        <h2 id="current-week">Week of <span id="week-display"></span></h2>
+        <div class="calendar-navigation">
+            <button class="nav-btn" id="prev-week">Previous Week</button>
+            <button class="nav-btn" id="current-week-btn">Current Week</button>
+            <button class="nav-btn" id="next-week">Next Week</button>
         </div>
     </div>
+    
+    <div class="calendar-wrapper">
+        <div class="calendar-grid" id="calendar-grid">
+            <div class="time-column-header"></div>
+            <div class="day-header">Sunday</div>
+            <div class="day-header">Monday</div>
+            <div class="day-header">Tuesday</div>
+            <div class="day-header">Wednesday</div>
+            <div class="day-header">Thursday</div>
+            <div class="day-header">Friday</div>
+            <div class="day-header">Saturday</div>
+        </div>
+    </div>
+    </div>
 </div>
+
+<!-- Time block modal -->
+<div id="time-block-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Add Time Block</h3>
+        <form id="time-block-form">
+            <div class="form-group">
+                <label for="block-title">Title:</label>
+                <input type="text" id="block-title" required>
+            </div>
+            <div class="form-group">
+                <label for="block-start">Start Time:</label>
+                <input type="time" id="block-start" required>
+            </div>
+            <div class="form-group">
+                <label for="block-end">End Time:</label>
+                <input type="time" id="block-end" required>
+            </div>
+            <div class="form-group">
+                <label for="block-color">Color:</label>
+                <select id="block-color">
+                    <option value="#007bff">Blue</option>
+                    <option value="#28a745">Green</option>
+                    <option value="#dc3545">Red</option>
+                    <option value="#ffc107">Yellow</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up cancel button handler
+        const cancelButton = document.querySelector('#time-block-modal .btn-secondary');
+        cancelButton.addEventListener('click', closeModal);
+        const calendarGrid = document.getElementById('calendar-grid');
+        const weekDisplay = document.getElementById('week-display');
+        let currentDate = new Date();
+        
+        // Set to beginning of week (Sunday)
+        currentDate.setDate(currentDate.getDate() - currentDate.getDay());
+        
+        function generateTimeSlots() {
+            // Clear existing time slots
+            const existingSlots = document.querySelectorAll('.time-column, .calendar-cell');
+            existingSlots.forEach(slot => slot.remove());
+            const times = [];
+            
+            // Generate time slots from 00:00 to 23:00
+            for (let hour = 0; hour < 24; hour++) {
+                const time = `${hour.toString().padStart(2, '0')}:00`;
+                times.push(time);
+            }
+            
+            times.forEach(time => {
+                // Add time column
+                // Add time column
+                const timeCell = document.createElement('div');
+                timeCell.className = 'time-column';
+                timeCell.textContent = time;
+                calendarGrid.appendChild(timeCell);
+                
+                // Add cells for each day
+                for (let day = 0; day < 7; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'calendar-cell';
+                    cell.dataset.time = time;
+                    cell.dataset.day = day;
+                    
+                    // Enable time block creation on click
+                    cell.addEventListener('click', function(e) {
+                        if (e.target === cell) {
+                            showModal(day, time);
+                        }
+                    });
+                    
+                    calendarGrid.appendChild(cell);
+                }
+            });
+            
+            updateWeekDisplay();
+            markCurrentTime();
+        }
+        
+        function updateWeekDisplay() {
+            const endDate = new Date(currentDate);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            const options = { month: 'short', day: 'numeric' };
+            weekDisplay.textContent = `${currentDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+        }
+        
+        function markCurrentTime() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentDay = now.getDay();
+            
+            // Remove existing current time indicators
+            document.querySelectorAll('.current-time-indicator').forEach(el => el.remove());
+            
+            // Only show indicator if current week is displayed
+            if (isSameWeek(now, currentDate)) {
+                const cells = document.querySelectorAll(`.calendar-cell[data-day="${currentDay}"]`);
+                cells.forEach((cell, index) => {
+                    if (index === currentHour) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'current-time-indicator';
+                        indicator.style.top = `${(currentMinutes / 60) * 100}%`;
+                        cell.appendChild(indicator);
+                    }
+                });
+            }
+        }
+        
+        function isSameWeek(date1, date2) {
+            const d1 = new Date(date1);
+            const d2 = new Date(date2);
+            d1.setDate(d1.getDate() - d1.getDay());
+            d2.setDate(d2.getDate() - d2.getDay());
+            return d1.toDateString() === d2.toDateString();
+        }
+        
+        function showModal(day, time) {
+            const modal = document.getElementById('time-block-modal');
+            const form = document.getElementById('time-block-form');
+            const startInput = document.getElementById('block-start');
+            
+            modal.style.display = 'block';
+            startInput.value = time;
+            
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                createTimeBlock(
+                    day,
+                    document.getElementById('block-title').value,
+                    document.getElementById('block-start').value,
+                    document.getElementById('block-end').value,
+                    document.getElementById('block-color').value
+                );
+                closeModal();
+            };
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('time-block-modal');
+            modal.style.display = 'none';
+            document.getElementById('time-block-form').reset();
+        }
+        
+        function createTimeBlock(day, title, start, end, color) {
+            const startHour = parseInt(start.split(':')[0]);
+            const endHour = parseInt(end.split(':')[0]);
+            const duration = endHour - startHour;
+            
+            const cells = document.querySelectorAll(`.calendar-cell[data-day="${day}"]`);
+            const startCell = cells[startHour];
+            
+            const block = document.createElement('div');
+            block.className = 'time-block';
+            block.textContent = title;
+            block.style.background = color;
+            block.style.height = `${duration * 100}%`;
+            block.style.top = '0';
+            
+            // Make time blocks draggable
+            block.draggable = true;
+            block.addEventListener('dragstart', handleDragStart);
+            block.addEventListener('dragend', handleDragEnd);
+            
+            startCell.appendChild(block);
+        }
+        
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+        
+        // Navigation buttons
+        document.getElementById('prev-week').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 7);
+            generateTimeSlots();
+        });
+        
+        document.getElementById('next-week').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 7);
+            generateTimeSlots();
+        });
+        
+        document.getElementById('current-week-btn').addEventListener('click', () => {
+            currentDate = new Date();
+            currentDate.setDate(currentDate.getDate() - currentDate.getDay());
+            generateTimeSlots();
+        });
+        
+        // Initialize calendar
+        generateTimeSlots();
+        
+        // Update current time indicator every minute
+        setInterval(markCurrentTime, 60000);
+    });
+</script>
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
-

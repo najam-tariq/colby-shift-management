@@ -17,18 +17,7 @@
 
 {% block content %}
 <div class="main-content">
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-messages">
-        {% for category, message in messages %}
-        <div class="flash-message flash-{{ category }}">
-            <strong>{{ '❌' if category == 'error' else '✅' if category == 'success' else 'ℹ️' }}</strong> {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
+    <!-- Flash Messages (removed to avoid duplication; base.html handles rendering) -->
 
     <!-- Content Grid -->
     <div class="content-grid">
@@ -167,84 +156,85 @@
                             💾 Add Coverage Requirement
                         </button>
                     </div>
+                </form>
 
-                    <!-- Coverage Format Guide -->
-                    <button type="button" class="guide-toggle" onclick="toggleGuide()">
-                        📘 View Coverage Format Guide
-                    </button>
+                <!-- Coverage Format Guide (moved outside add coverage form to avoid nested form issues) -->
+                <button type="button" class="guide-toggle" onclick="toggleGuide()">
+                    📘 View Coverage Format Guide
+                </button>
 
-                    <div id="coverageGuide" class="csv-guide" style="display: none;">
-                        <h4>Coverage Requirements Guide:</h4>
-                        <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                            <li><strong>Day:</strong> Select the day of the week for coverage</li>
-                            <li><strong>Time Range:</strong> Define start and end times (24-hour format)</li>
-                            <li><strong>Role:</strong> Choose required staff role (Student/Supervisor/Manager)</li>
-                            <li><strong>Count:</strong> Number of staff members needed during this window</li>
-                            <li><strong>Overlap Check:</strong> System prevents conflicting time windows</li>
-                        </ul>
-                    </div>
+                <div id="coverageGuide" class="csv-guide" style="display: none;">
+                    <h4>Coverage Requirements Guide:</h4>
+                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                        <li><strong>Day:</strong> Select the day of the week for coverage</li>
+                        <li><strong>Time Range:</strong> Define start and end times (24-hour format)</li>
+                        <li><strong>Role:</strong> Choose required staff role (Student/Supervisor/Manager)</li>
+                        <li><strong>Count:</strong> Number of staff members needed during this window</li>
+                        <li><strong>Overlap Check:</strong> System prevents conflicting time windows</li>
+                    </ul>
+                </div>
 
-                    <!-- Current Coverage Requirements -->
-                    {% if staffing_needs %}
-                    <table class="coverage-table">
-                        <thead>
-                            <tr>
-                                <th>Day</th>
-                                <th>Time Window</th>
-                                <th>Role</th>
-                                <th>Required Count</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for need in staffing_needs %}
-                            <tr>
-                                <td>
-                                    <span class="day-badge">
-                                        {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                                        'Saturday', 'Sunday'] %}
-                                        {{ day_names[need.day_of_week] }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="time-range">
-                                        {{ need.start_time.strftime('%H:%M') }} - {{ need.end_time.strftime('%H:%M') }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="role-badge {{ need.role_required }}">
-                                        {{ need.role_required.title() }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="count-badge">{{ need.required_count }}</span>
-                                </td>
-                                <td>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="action" value="delete_coverage">
-                                        <input type="hidden" name="need_id" value="{{ need.need_id }}">
-                                        <button type="submit" class="btn-delete"
-                                            onclick="return confirm('Are you sure you want to delete this coverage requirement?')">
-                                            🗑️ Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <div class="empty-state">
-                        <h4>📋 No Coverage Requirements Defined</h4>
-                        <p>Add your first coverage window above to get started with staffing requirements.</p>
-                    </div>
-                    {% endif %}
+                <!-- Current Coverage Requirements (outside the add coverage form so delete buttons submit their own forms correctly) -->
+                {% if staffing_needs %}
+                <table class="coverage-table">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time Window</th>
+                            <th>Role</th>
+                            <th>Required Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for need in staffing_needs %}
+                        <tr>
+                            <td>
+                                <span class="day-badge">
+                                    {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                                    'Saturday', 'Sunday'] %}
+                                    {{ day_names[need.day_of_week] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="time-range">
+                                    {{ need.start_time.strftime('%H:%M') }} - {{ need.end_time.strftime('%H:%M') }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="role-badge {{ need.role_required }}">
+                                    {{ need.role_required.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="count-badge">{{ need.required_count }}</span>
+                            </td>
+                            <td>
+                                <form method="POST" style="display: inline;">
+                                    <input type="hidden" name="action" value="delete_coverage">
+                                    <input type="hidden" name="need_id" value="{{ need.need_id }}">
+                                    <button type="submit" class="btn-delete"
+                                        onclick="return confirm('Are you sure you want to delete this coverage requirement?')">
+                                        🗑️ Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <h4>📋 No Coverage Requirements Defined</h4>
+                    <p>Add your first coverage window above to get started with staffing requirements.</p>
+                </div>
+                {% endif %}
 
-                    <div class="form-actions">
-                        <a href="{{ url_for('auth.shiftManagement') }}" class="btn-secondary">
-                            🏠 Back to Dashboard
-                        </a>
-                    </div>
+                <div class="form-actions">
+                    <a href="{{ url_for('auth.shiftManagement') }}" class="btn-secondary">
+                        🏠 Back to Dashboard
+                    </a>
+                </div>
             </div>
         </div>
 

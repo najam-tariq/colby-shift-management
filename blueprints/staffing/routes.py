@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from . import staffing_bp
-from models import db, StaffingNeeds, Term
+from models import db, StaffingNeeds, Term, Availability, User
 from datetime import datetime, time
 import json
 
@@ -148,21 +148,93 @@ def index():
                     flash('Start time must be before end time.', 'error')
                     return redirect(url_for('staffing.index'))
                 
-                # Check for overlapping coverage windows
-                existing = StaffingNeeds.query.filter(
+                # VALIDATION BLOCK START -------------------------------------------------
+                validation_errors = []
+                validation_warnings = []
+
+                # 1. Overlap check (same day & role)
+                overlap = StaffingNeeds.query.filter(
                     StaffingNeeds.term_id == term.term_id,
                     StaffingNeeds.day_of_week == day_of_week,
                     StaffingNeeds.role_required == role_required,
-                    ((StaffingNeeds.start_time <= start_time) & (StaffingNeeds.end_time > start_time)) |
-                    ((StaffingNeeds.start_time < end_time) & (StaffingNeeds.end_time >= end_time)) |
-                    ((StaffingNeeds.start_time >= start_time) & (StaffingNeeds.end_time <= end_time))
+                    (
+                        ((StaffingNeeds.start_time <= start_time) & (StaffingNeeds.end_time > start_time)) |
+                        ((StaffingNeeds.start_time < end_time) & (StaffingNeeds.end_time >= end_time)) |
+                        ((StaffingNeeds.start_time >= start_time) & (StaffingNeeds.end_time <= end_time))
+                    )
                 ).first()
-                
-                if existing:
-                    flash('Coverage window overlaps with existing requirement.', 'error')
+                if overlap:
+                    validation_errors.append('Time window overlaps an existing requirement for this role.')
+
+                # 2. Positive duration
+                if start_time >= end_time:
+                    validation_errors.append('Start time must be before end time.')
+
+                # 3. Headcount reasonable relative to active users of role
+                active_role_users = User.query.filter_by(role=role_required, is_active=True).count()
+                if active_role_users == 0:
+                    validation_warnings.append(f'No active users with role "{role_required}" exist yet.')
+                elif required_count > active_role_users:
+                    validation_errors.append(f'Required count ({required_count}) exceeds active {role_required} count ({active_role_users}).')
+
+                # 4. Availability coverage capacity (only if availability records exist for term)
+                # Map int day_of_week -> name used in Availability.day_of_week
+                day_name_map = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+                day_name = day_name_map[day_of_week]
+                avail_q = Availability.query.filter(
+                    Availability.term_id == term.term_id,
+                    Availability.day_of_week == day_name
+                ).all()
+                if avail_q:
+                    fully_covering_users = set()
+                    partially_covering_users = set()
+                    for a in avail_q:
+                        # Full coverage if user's availability window fully contains coverage window
+                        if a.start_time <= start_time and a.end_time >= end_time:
+                            fully_covering_users.add(a.user_id)
+                        # Partial coverage intersection heuristic
+                        elif not (a.end_time <= start_time or a.start_time >= end_time):
+                            partially_covering_users.add(a.user_id)
+                    if len(fully_covering_users) < required_count:
+                        validation_warnings.append(
+                            f'Only {len(fully_covering_users)} users fully available for this window; requires {required_count}. '
+                            f'({len(partially_covering_users)} have partial overlap)'
+                        )
+                else:
+                    validation_warnings.append('No availability submitted yet for this term/day; capacity check skipped.')
+
+                # 5. Aggregate required hours sanity (total required vs theoretical capacity)
+                # Compute current total required staff-hours for term (existing needs + this one prospective)
+                def hours(t1, t2):
+                    return (datetime.combine(datetime.today(), t2) - datetime.combine(datetime.today(), t1)).seconds / 3600.0
+                prospective_hours = hours(start_time, end_time) * required_count
+                existing_needs = StaffingNeeds.query.filter_by(term_id=term.term_id).all()
+                total_required_hours = sum(hours(n.start_time, n.end_time) * n.required_count for n in existing_needs) + prospective_hours
+
+                # Rough theoretical capacity: active students * average weekly available hours? We approximate with sum of availability windows for role 'student'
+                if role_required == 'student':
+                    student_avail = Availability.query.filter_by(term_id=term.term_id).all()
+                    # Sum hours across windows (not deduped overlaps) for coarse upper bound
+                    theoretical_capacity = sum(hours(a.start_time, a.end_time) for a in student_avail)
+                    if theoretical_capacity and total_required_hours > theoretical_capacity * 1.1:  # allow 10% overhead cushion
+                        validation_warnings.append(
+                            f'Total required student staff-hours ({total_required_hours:.1f}) exceeds aggregate availability ({theoretical_capacity:.1f}).'
+                        )
+
+                # If any errors, block
+                if validation_errors:
+                    for msg in validation_errors:
+                        flash(msg, 'error')
+                    # Show warnings too for context
+                    for msg in validation_warnings:
+                        flash(msg, 'error')  # escalate warnings when blocking
                     return redirect(url_for('staffing.index'))
-                
-                # Create new staffing need
+
+                # Otherwise proceed, flashing warnings (non-blocking)
+                for msg in validation_warnings:
+                    flash(msg, 'info')
+
+                # Create new staffing need (validated)
                 new_need = StaffingNeeds(
                     term_id=term.term_id,
                     day_of_week=day_of_week,
@@ -171,11 +243,10 @@ def index():
                     role_required=role_required,
                     required_count=required_count
                 )
-                
                 db.session.add(new_need)
                 db.session.commit()
-                
-                flash(f'Coverage requirement added successfully!', 'success')
+                flash('Coverage requirement added successfully!', 'success')
+                # VALIDATION BLOCK END ---------------------------------------------------
                 
             except ValueError as e:
                 flash('Invalid input format. Please check your entries.', 'error')

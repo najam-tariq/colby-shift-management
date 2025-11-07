@@ -8,13 +8,12 @@
 
 {% block content %}
 <div class="main-content">
-    <!-- Content Grid -->
     <div class="content-grid">
         <!-- Main Availability Section -->
         <div class="availability-section">
             <div class="section-header">
                 <h2>📊 Student Availability</h2>
-                <p>View and edit availability schedules for all students</p>
+                <p>View and edit availability schedules for all students (24-hour format)</p>
             </div>
 
             <div class="section-content">
@@ -26,9 +25,9 @@
                         <select id="term_select" class="term-dropdown" onchange="changeAvailabilityTerm(this.value)">
                             <option value="">-- Choose a Term --</option>
                             {% for t in available_terms %}
-                            <option value="{{ t.term_id }}" {% if active_term and t.term_id==active_term.term_id
-                                %}selected{% endif %}>{{ t.name }} ({{ t.start_date.strftime('%m/%d') }} - {{
-                                t.end_date.strftime('%m/%d') }})</option>
+                            <option value="{{ t.term_id }}" {% if active_term and t.term_id==active_term.term_id %}selected{% endif %}>
+                                {{ t.name }} ({{ t.start_date.strftime('%m/%d') }} - {{ t.end_date.strftime('%m/%d') }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -49,8 +48,7 @@
                             <label for="csvFile" class="file-input-label">Choose File</label>
                         </div>
                         <input type="hidden" name="term_id" value="{{ active_term.term_id if active_term }}">
-                        <button type="submit" name="action" value="upload" class="btn-primary"
-                            style="margin-left: 1rem;">
+                        <button type="submit" name="action" value="upload" class="btn-primary" style="margin-left: 1rem;">
                             Upload & Process
                         </button>
                     </div>
@@ -66,9 +64,8 @@
 John Doe,Monday,09:00,17:00
 Jane Smith,Tuesday,13:00,17:30</pre>
                         <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                            <li><strong>day_of_week:</strong> Monday, Tuesday, Wednesday, Thursday, Friday, Saturday,
-                                Sunday</li>
-                            <li><strong>Time format:</strong> 24-hour format (HH:MM)</li>
+                            <li><strong>day_of_week:</strong> Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday</li>
+                            <li><strong>Time format:</strong> 24-hour format (<code>HH:MM</code>), e.g. <code>09:00-17:00</code></li>
                             <li><strong>Multiple entries:</strong> One row per availability block</li>
                         </ul>
                     </div>
@@ -92,8 +89,7 @@ Jane Smith,Tuesday,13:00,17:30</pre>
                             <tr>
                                 <td><input type="text" name="student_name[]" value="{{ student }}" readonly></td>
                                 {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
-                                <td><input type="text" name="{{ d }}[]" value="{{ days[d] }}"
-                                        placeholder="e.g. 9:00-17:00"></td>
+                                <td><input type="text" name="{{ d }}[]" value="{{ days[d] }}" placeholder="e.g. 09:00-17:00"></td>
                                 {% endfor %}
                             </tr>
                             {% endfor %}
@@ -102,7 +98,7 @@ Jane Smith,Tuesday,13:00,17:30</pre>
                             <tr style="background: #f8f9fb;">
                                 <td><input type="text" name="student_name[]" placeholder="➕ Add new student..."></td>
                                 {% for d in ['mon','tue','wed','thu','fri','sat','sun'] %}
-                                <td><input type="text" name="{{ d }}[]" placeholder="9:00-17:00"></td>
+                                <td><input type="text" name="{{ d }}[]" placeholder="09:00-17:00"></td>
                                 {% endfor %}
                             </tr>
                         </tbody>
@@ -154,7 +150,6 @@ Jane Smith,Tuesday,13:00,17:30</pre>
         const guide = document.getElementById('csvGuide');
         const isHidden = guide.style.display === 'none';
         guide.style.display = isHidden ? 'block' : 'none';
-
         const button = document.querySelector('.guide-toggle');
         button.textContent = isHidden ? '📘 Hide CSV Guide' : '📘 View CSV Format Guide';
     }
@@ -177,12 +172,11 @@ Jane Smith,Tuesday,13:00,17:30</pre>
     function setWeekdaySchedule() {
         const weekdayColumns = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
         const rows = document.querySelectorAll('.availability-table tbody tr:not(:last-child)');
-
         rows.forEach(row => {
             weekdayColumns.forEach(day => {
                 const input = row.querySelector(`input[name="${day}[]"]`);
                 if (input && !input.value) {
-                    input.value = '9:00-17:00';
+                    input.value = '09:00-17:00';
                 }
             });
         });
@@ -191,7 +185,6 @@ Jane Smith,Tuesday,13:00,17:30</pre>
     function setWeekendSchedule() {
         const weekendColumns = ['Sat', 'Sun'];
         const rows = document.querySelectorAll('.availability-table tbody tr:not(:last-child)');
-
         rows.forEach(row => {
             weekendColumns.forEach(day => {
                 const input = row.querySelector(`input[name="${day}[]"]`);

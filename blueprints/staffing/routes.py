@@ -245,13 +245,17 @@ def index():
                     flash(msg, 'info')
 
                 # Create new staffing need (validated)
+                # Get student capacity from the form
+                student_capacity = int(request.form.get('student_capacity', 1))
+                
                 new_need = StaffingNeeds(
                     term_id=term.term_id,
                     day_of_week=day_of_week,
                     start_time=start_time,
                     end_time=end_time,
                     role_required=role_required,
-                    required_count=required_count
+                    required_count=required_count,
+                    student_capacity=student_capacity
                 )
                 db.session.add(new_need)
                 db.session.commit()
@@ -589,7 +593,8 @@ def index():
                     'start_time': need.start_time.strftime('%H:%M'),
                     'end_time': need.end_time.strftime('%H:%M'),
                     'role': need.role_required,
-                    'count': need.required_count
+                    'count': need.required_count,
+                    'student_capacity': need.student_capacity
                 })
 
         gap_warnings = analyze_staffing_gaps(selected_term)

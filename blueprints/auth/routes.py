@@ -12,7 +12,10 @@ load_dotenv()
 @auth_bp.route('/', methods=['GET'])
 def shiftManagement():
     if current_user.is_authenticated:
-        return render_template('landing.html')
+        # Get violation summary for dashboard
+        from models import ShiftViolation
+        violation_summary = ShiftViolation.get_violation_summary()
+        return render_template('landing.html', violation_summary=violation_summary)
     return render_template('dashboard.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])

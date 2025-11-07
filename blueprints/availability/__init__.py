@@ -9,5 +9,3 @@ availability_bp = Blueprint(
     static_url_path='/availability/static'
 )
 
-from . import routes
-

@@ -34,6 +34,22 @@
     .time-block {
         font-size: 12px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        padding: 4px;
+    }
+
+    .time-block-title {
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .time-block-capacity {
+        font-size: 11px;
+        color: #555;
+        background: rgba(255,255,255,0.8);
+        border-radius: 2px;
+        padding: 1px 3px;
     }
     
     .modal {
@@ -91,6 +107,10 @@
             <div class="form-group">
                 <label for="block-end">End Time:</label>
                 <input type="time" id="block-end" required>
+            </div>
+            <div class="form-group">
+                <label for="student-capacity">Student Capacity:</label>
+                <input type="number" id="student-capacity" min="1" required>
             </div>
             <div class="form-group">
                 <label for="block-color">Color:</label>
@@ -217,7 +237,8 @@
                     document.getElementById('block-title').value,
                     document.getElementById('block-start').value,
                     document.getElementById('block-end').value,
-                    document.getElementById('block-color').value
+                    document.getElementById('block-color').value,
+                    document.getElementById('student-capacity').value
                 );
                 closeModal();
             };
@@ -229,7 +250,7 @@
             document.getElementById('time-block-form').reset();
         }
         
-        function createTimeBlock(day, title, start, end, color) {
+        function createTimeBlock(day, title, start, end, color, capacity) {
             const startHour = parseInt(start.split(':')[0]);
             const endHour = parseInt(end.split(':')[0]);
             const duration = endHour - startHour;
@@ -239,7 +260,16 @@
             
             const block = document.createElement('div');
             block.className = 'time-block';
-            block.textContent = title;
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'time-block-title';
+            titleDiv.textContent = title;
+            
+            const capacityDiv = document.createElement('div');
+            capacityDiv.className = 'time-block-capacity';
+            capacityDiv.textContent = `Capacity: ${capacity} students`;
+            
+            block.appendChild(titleDiv);
+            block.appendChild(capacityDiv);
             block.style.background = color;
             block.style.height = `${duration * 100}%`;
             block.style.top = '0';

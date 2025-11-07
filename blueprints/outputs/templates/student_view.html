@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}My Schedule - {{ student.name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='outputs.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='student_view.css') }}">
+{% endblock %}
+
+{% block header_title %}My Schedule{% endblock %}
+{% block header_subtitle %}View your upcoming shifts{% endblock %}
+
+{% block content %}
+<div class="student-header">
+    <h2>{{ student.name }}</h2>
+    <p>{{ student.email }}</p>
+    <div class="stats">
+        <div class="stat-box">
+            <div>{{ weekly_shift_count }}</div>
+            <div>This Week Shifts</div>
+        </div>
+        <div class="stat-box">
+            <div>{{ "%.1f"|format(weekly_hours) }}</div>
+            <div>This Week Hours</div>
+        </div>
+        <div class="stat-box">
+            <div>{{ all_weeks|length }}</div>
+            <div>Total Weeks</div>
+        </div>
+    </div>
+    <div class="export-actions">
+        <a href="https://calendar.google.com/calendar/r?cid={{ ('webcal://' + request.host + url_for('outputs.export_ical_student', token=student.calendar_token)) | urlencode }}" 
+           class="export-btn google-cal-btn"
+           target="_blank">
+            📅 Add to Google Calendar
+        </a>
+        <a href="{{ url_for('outputs.export_ical_student', token=student.calendar_token) }}" class="export-btn">
+            📥 Download (.ics)
+        </a>
+        <a href="{{ url_for('outputs.public_schedule_view', token=student.calendar_token) }}" 
+           class="export-btn"
+           target="_blank"
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            🌐 Web View
+        </a>
+    </div>
+</div>
+
+{% if current_week %}
+<!-- Week Navigation -->
+<div class="week-navigation">
+    <a href="{{ url_for('outputs.student_view', user_id=student.user_id, week=week_index-1) }}" 
+       class="nav-btn"
+       {% if week_index == 0 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        ← Previous Week
+    </a>
+    
+    <div class="week-title">
+        📅 {{ current_week.week_start.strftime('%b %d') }} - {{ current_week.week_end.strftime('%b %d, %Y') }}
+    </div>
+    
+    <a href="{{ url_for('outputs.student_view', user_id=student.user_id, week=week_index+1) }}" 
+       class="nav-btn"
+       {% if week_index >= all_weeks|length - 1 %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+        Next Week →
+    </a>
+</div>
+
+<!-- Time Grid Calendar -->
+<div class="time-grid-container">
+    <div class="time-grid-wrapper">
+        <!-- Calendar Header -->
+        <div class="calendar-header">
+            <div class="time-gutter">
+                <span class="gmt-label">GMT-05</span>
+            </div>
+            {% for day_date in current_week.week_dates %}
+            <div class="day-column-header">
+                <div class="day-name">{{ day_date.strftime('%a').upper() }}</div>
+                <div class="day-number">{{ day_date.day }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Calendar Body -->
+        <div class="calendar-body">
+            <!-- Time Column -->
+            <div class="time-column">
+                {% for hour in range(8, 22) %}
+                <div class="time-marker">
+                    <span class="time-text">{{ hour }}:00</span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Days Grid -->
+            <div class="days-grid">
+                {% for day_date in current_week.week_dates %}
+                <div class="day-column">
+                    <!-- Hour lines -->
+                    {% for hour in range(8, 22) %}
+                    <div class="hour-row"></div>
+                    {% endfor %}
+                    
+                    <!-- Shifts for this day -->
+                    {% set day_shifts = current_week.shifts | selectattr('date', 'equalto', day_date) | list %}
+                    {% for shift in day_shifts %}
+                        {% set start_hour = shift.start_time.hour %}
+                        {% set end_hour = shift.end_time.hour %}
+                        {% set start_minute = shift.start_time.minute %}
+                        {% set end_minute = shift.end_time.minute %}
+                        
+                        {# Calculate exact position in minutes from start time (8:00 AM) #}
+                        {% set start_minutes = (start_hour - 8) * 60 + start_minute %}
+                        {% set end_minutes = (end_hour - 8) * 60 + end_minute %}
+                        {% set duration_minutes = end_minutes - start_minutes %}
+                        
+                        {# Calculate top position and height (each hour = 60px) #}
+                        {% set top_px = start_minutes %}
+                        {% set height_px = duration_minutes %}
+                        {% set duration = duration_minutes / 60 %}
+                        
+                        <div class="shift-card"
+                             style="top: {{ top_px }}px; 
+                                    height: {{ height_px }}px;
+                                    left: 2px;
+                                    right: 2px;"
+                             data-shift-id="{{ shift.shift_id }}"
+                             data-shift-name="{{ student.name }}"
+                             data-shift-email="{{ student.email }}"
+                             data-shift-date="{{ day_date.strftime('%A, %B %d, %Y') }}"
+                             data-shift-start="{{ shift.start_time.strftime('%I:%M %p') }}"
+                             data-shift-end="{{ shift.end_time.strftime('%I:%M %p') }}"
+                             data-shift-duration="{{ "%.1f"|format(duration) }}"
+                             data-shift-manual="{{ 'true' if shift.was_manually_adjusted else 'false' }}"
+                             onclick="openShiftDialog(this)">
+                            <div class="shift-content">
+                                <div class="shift-title">
+                                    {{ student.name.split()[0] }}
+                                    {% if shift.was_manually_adjusted %}<span class="manual-badge">✏️</span>{% endif %}
+                                </div>
+                                <div class="shift-time-range">
+                                    {{ shift.start_time.strftime('%-I:%M') }}{% if shift.start_time.hour < 12 %}am{% else %}pm{% endif %} - {{ shift.end_time.strftime('%-I:%M') }}{% if shift.end_time.hour < 12 %}am{% else %}pm{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="week-counter">
+    Week {{ week_index + 1 }} of {{ all_weeks|length }}
+</div>
+
+<!-- Shift Dialog Popup -->
+<div id="shiftDialogOverlay" class="shift-dialog-overlay" onclick="closeShiftDialog(event)">
+    <div class="shift-dialog" onclick="event.stopPropagation()">
+        <div class="shift-dialog-header">
+            <div class="shift-dialog-title-section">
+                <h2 class="shift-dialog-title" id="dialogShiftName"></h2>
+                <p class="shift-dialog-subtitle" id="dialogShiftDate"></p>
+            </div>
+            <button class="shift-dialog-close" onclick="closeShiftDialog()">&times;</button>
+        </div>
+        
+        <div class="shift-dialog-content">
+            <div class="shift-info-row">
+                <div class="shift-info-icon">🕐</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Time</div>
+                    <div class="shift-info-value" id="dialogShiftTime"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row">
+                <div class="shift-info-icon">⏱️</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Duration</div>
+                    <div class="shift-info-value" id="dialogShiftDuration"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row">
+                <div class="shift-info-icon">📧</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Email</div>
+                    <div class="shift-info-value" id="dialogShiftEmail"></div>
+                </div>
+            </div>
+            
+            <div class="shift-info-row" id="dialogManualRow" style="display: none;">
+                <div class="shift-info-icon">✏️</div>
+                <div class="shift-info-content">
+                    <div class="shift-info-label">Note</div>
+                    <div class="shift-info-value">This shift was manually adjusted</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="shift-dialog-actions">
+            <button class="shift-dialog-btn shift-dialog-btn-primary" onclick="closeShiftDialog()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{% else %}
+    <div class="no-shifts">
+        <h3>No shifts scheduled</h3>
+        <p>You don't have any shifts scheduled at this time.</p>
+    </div>
+{% endif %}
+
+<div class="info-box">
+    <div class="info-box-emoji">📝</div>
+    <div>
+        <p><strong>Note:</strong> This is a read-only view of your schedule. If you need to request changes to your schedule, please contact your supervisor.</p>
+        
+        {% if supervisors %}
+        <div class="supervisor-contact">
+            <p><strong>Supervisor Contact{{ 's' if supervisors|length > 1 else '' }}:</strong></p>
+            <ul class="supervisor-list">
+                {% for supervisor in supervisors %}
+                <li>
+                    <strong>{{ supervisor.name }}</strong> - 
+                    <a href="mailto:{{ supervisor.email }}" class="supervisor-email">{{ supervisor.email }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+let currentShiftId = null;
+
+function openShiftDialog(element) {
+    const overlay = document.getElementById('shiftDialogOverlay');
+    
+    // Get shift data from data attributes
+    currentShiftId = element.dataset.shiftId;
+    const name = element.dataset.shiftName;
+    const email = element.dataset.shiftEmail;
+    const date = element.dataset.shiftDate;
+    const startTime = element.dataset.shiftStart;
+    const endTime = element.dataset.shiftEnd;
+    const duration = element.dataset.shiftDuration;
+    const isManual = element.dataset.shiftManual === 'true';
+    
+    // Populate dialog
+    document.getElementById('dialogShiftName').textContent = name;
+    document.getElementById('dialogShiftDate').textContent = date;
+    document.getElementById('dialogShiftTime').textContent = `${startTime} - ${endTime}`;
+    document.getElementById('dialogShiftDuration').textContent = `${duration} hours`;
+    document.getElementById('dialogShiftEmail').textContent = email;
+    
+    // Manual adjustment row
+    const manualRow = document.getElementById('dialogManualRow');
+    manualRow.style.display = isManual ? 'flex' : 'none';
+    
+    // Show dialog
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeShiftDialog(event) {
+    // Only close if clicking the overlay background or close button
+    if (!event || event.target.id === 'shiftDialogOverlay' || event.target.classList.contains('shift-dialog-close')) {
+        const overlay = document.getElementById('shiftDialogOverlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restore scrolling
+        currentShiftId = null;
+    }
+}
+
+// Close dialog on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeShiftDialog({ target: { id: 'shiftDialogOverlay' } });
+    }
+});
+</script>
+
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('outputs.index') }}">← Back to Outputs</a> |
+<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>
+{% endblock %}

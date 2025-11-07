@@ -1,0 +1,696 @@
+{% extends "base.html" %}
+
+{% block title %}Gap Management - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.gap-management-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.term-selector {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gap-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card.warning {
+    border-left: 4px solid #ffc107;
+}
+
+.stat-card.error {
+    border-left: 4px solid #dc3545;
+}
+
+.stat-card.success {
+    border-left: 4px solid #28a745;
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.policy-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gaps-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gaps-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.gaps-table th,
+.gaps-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.gaps-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.gap-severity-error {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.gap-severity-warning {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.gap-type {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.gap-type-small {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.gap-type-very-small {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+}
+
+.merge-suggestion {
+    background: #e7f3ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.schedule-generator {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.generator-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.no-gaps-message {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Gap Management{% endblock %}
+{% block header_subtitle %}Prevent fragmented 15-30 minute slots in student schedules{% endblock %}
+
+{% block content %}
+<div class="gap-management-container">
+    <!-- Term Selection -->
+    <div class="term-selector">
+        <h3>🎯 Select Term for Gap Analysis</h3>
+        <form method="GET">
+            <div class="form-group">
+                <label for="term_id">Term:</label>
+                <select name="term_id" id="term_id" onchange="this.form.submit()">
+                    <option value="">Select a term...</option>
+                    {% for term in terms %}
+                    <option value="{{ term.term_id }}" {% if term.term_id == selected_term_id %}selected{% endif %}>
+                        {{ term.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_term_id and gap_analysis %}
+    <!-- Gap Statistics -->
+    <div class="gap-stats">
+        <div class="stat-card {% if gap_analysis.gap_summary.total_gaps > 0 %}warning{% else %}success{% endif %}">
+            <div class="stat-number">{{ gap_analysis.gap_summary.total_gaps }}</div>
+            <div class="stat-label">Total Gaps Detected</div>
+        </div>
+        
+        <div class="stat-card error">
+            <div class="stat-number">{{ gap_analysis.gap_summary.by_severity.get('error', 0) }}</div>
+            <div class="stat-label">Critical Gaps (&lt;15 min)</div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-number">{{ gap_analysis.gap_summary.by_severity.get('warning', 0) }}</div>
+            <div class="stat-label">Warning Gaps (15-30 min)</div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-number">{{ gap_analysis.gap_summary.mergeable_gaps }}</div>
+            <div class="stat-label">Auto-Mergeable Gaps</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ "%.1f"|format(gap_analysis.gap_summary.avg_gap_duration) }}</div>
+            <div class="stat-label">Average Gap (minutes)</div>
+        </div>
+    </div>
+
+    <!-- Gap Policy Configuration -->
+    <div class="policy-section">
+        <h3>⚙️ Gap Management Policy</h3>
+        <form method="POST" action="" id="policyForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div class="form-group">
+                    <label for="min_gap_threshold">Minimum Gap Threshold (minutes):</label>
+                    <input type="number" name="min_gap_threshold" id="min_gap_threshold" 
+                           value="{{ policy.min_gap_threshold if policy else 15 }}" min="1" max="60">
+                    <small>Gaps smaller than this are considered critical errors</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_gap_threshold">Maximum Gap Threshold (minutes):</label>
+                    <input type="number" name="max_gap_threshold" id="max_gap_threshold" 
+                           value="{{ policy.max_gap_threshold if policy else 30 }}" min="1" max="120">
+                    <small>Gaps larger than this are considered acceptable</small>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="allow_gap_merging" id="allow_gap_merging" 
+                               {% if not policy or policy.allow_gap_merging %}checked{% endif %}>
+                        <label for="allow_gap_merging">Allow Automatic Gap Merging</label>
+                    </div>
+                    <small>Automatically merge adjacent shifts when possible</small>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="gap_warning_enabled" id="gap_warning_enabled" 
+                               {% if not policy or policy.gap_warning_enabled %}checked{% endif %}>
+                        <label for="gap_warning_enabled">Enable Gap Warnings</label>
+                    </div>
+                    <small>Show warnings when gaps are detected</small>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="prefer_longer_shifts" id="prefer_longer_shifts" 
+                               {% if not policy or policy.prefer_longer_shifts %}checked{% endif %}>
+                        <label for="prefer_longer_shifts">Prefer Longer Shifts</label>
+                    </div>
+                    <small>Generate longer shifts instead of fragmented ones</small>
+                </div>
+                
+                <!-- Issue #35: Transition time settings -->
+                <div class="form-group">
+                    <label for="min_transition_time">Minimum Transition Time (minutes):</label>
+                    <input type="number" name="min_transition_time" id="min_transition_time" 
+                           value="{{ policy.min_transition_time if policy else 10 }}" min="1" max="60">
+                    <small>Required break time between consecutive shifts for the same student</small>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="transition_warning_enabled" id="transition_warning_enabled" 
+                               {% if not policy or policy.transition_warning_enabled %}checked{% endif %}>
+                        <label for="transition_warning_enabled">Enable Transition Time Warnings</label>
+                    </div>
+                    <small>Show warnings when transition time is insufficient</small>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-primary">💾 Update Policy</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Schedule Generator -->
+    <div class="schedule-generator">
+        <h3>🤖 Gap-Aware Schedule Generator</h3>
+        <p>Generate a new schedule that automatically avoids problematic gaps.</p>
+        
+        <form method="POST" action="" id="scheduleForm">
+            <div class="generator-form">
+                <div class="form-group">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" name="start_date" id="start_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" name="end_date" id="end_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="dry_run" id="dry_run" value="1">
+                        <label for="dry_run">Preview Only (Don't Save)</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success">🚀 Generate Schedule</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Gap Detection and Analysis -->
+    <div class="gaps-section">
+        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+            <h3>Detected Gaps</h3>
+            <div class="action-buttons">
+                <button onclick="detectGaps()" class="btn btn-primary" id="detectBtn">Re-scan for Gaps</button>
+                <button onclick="mergeAllMergeable()" class="btn btn-success" id="mergeAllBtn">🔗 Merge All Eligible</button>
+            </div>
+        </div>
+
+        {% if gap_analysis.total_gaps_detected > 0 %}
+        <table class="gaps-table" id="gapsTable">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                    <th>Student</th>
+                    <th>Date</th>
+                    <th>Gap Time</th>
+                    <th>Duration</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                    <th>Merge Suggestion</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="gapsTableBody">
+                <!-- Gaps will be loaded via AJAX -->
+            </tbody>
+        </table>
+        
+        <div class="action-buttons" style="margin-top: 20px;">
+            <button onclick="mergeSelected()" class="btn btn-success">🔗 Merge Selected</button>
+            <button onclick="refreshGaps()" class="btn btn-secondary">🔄 Refresh</button>
+        </div>
+        {% else %}
+        <div class="no-gaps-message">
+            <h4>🎉 No Problematic Gaps Detected!</h4>
+            <p>The current schedule doesn't have any fragmented 15-30 minute gaps.</p>
+            <button onclick="detectGaps()" class="btn btn-primary">Scan for Gaps</button>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Override Modal -->
+<div id="overrideModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3>Override Gap Warning</h3>
+        <p>Provide justification for accepting this gap as unavoidable:</p>
+        <form id="overrideForm">
+            <div class="form-group">
+                <label for="justification">Justification:</label>
+                <textarea name="justification" id="justification" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required></textarea>
+            </div>
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-warning">✓ Apply Override</button>
+                <button type="button" onclick="closeOverrideModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentGapId = null;
+
+function detectGaps() {
+    const btn = document.getElementById('detectBtn');
+    btn.textContent = 'Scanning...';
+    btn.disabled = true;
+    
+    const termSelect = document.getElementById('termSelect');
+    const termId = termSelect.value;
+    
+    fetch(`/constraints/gap-management/detect/${termId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshGaps();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error detecting gaps: ' + error);
+    })
+    .finally(() => {
+        btn.textContent = 'Re-scan for Gaps';
+        btn.disabled = false;
+    });
+}
+
+function refreshGaps() {
+    const termSelect = document.getElementById('termSelect');
+    const termId = termSelect.value;
+    
+    if (!termId) {
+        document.getElementById('gapsTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-muted">Please select a term</td></tr>';
+        return;
+    }
+    
+    fetch(`/constraints/gap-management/gaps-data/${termId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.gaps) {
+            updateGapsTable(data.gaps);
+        } else {
+            console.error('Error loading gaps:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching gaps:', error);
+    });
+}
+
+function updateGapsTable(gaps) {
+    const tbody = document.getElementById('gapsTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    gaps.forEach(gap => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="gap-checkbox" value="${gap.gap_id}"></td>
+            <td>${gap.user_name}</td>
+            <td>${gap.date}</td>
+            <td>${gap.first_shift_end} - ${gap.second_shift_start}</td>
+            <td>${gap.gap_duration} min</td>
+            <td><span class="gap-type gap-type-${gap.gap_type.replace('_', '-')}">${gap.gap_type.replace('_', ' ')}</span></td>
+            <td><span class="gap-severity-${gap.severity}">${gap.severity.toUpperCase()}</span></td>
+            <td>${gap.merge_suggestion && gap.merge_suggestion.can_merge ? 
+                `<div class="merge-suggestion">Can merge into ${gap.merge_suggestion.merged_duration}min shift</div>` : 
+                '<span style="color: #666;">Not mergeable</span>'}</td>
+            <td>
+                ${gap.merge_suggestion && gap.merge_suggestion.can_merge ? 
+                    `<button onclick="mergeGap(${gap.gap_id})" class="btn btn-success btn-sm">🔗 Merge</button>` : ''}
+                <button onclick="overrideGap(${gap.gap_id})" class="btn btn-warning btn-sm">Override</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function mergeGap(gapId) {
+    if (!confirm('Merge this gap by combining the adjacent shifts?')) return;
+    
+    fetch(`{{ url_for('constraints.merge_gap', gap_id=0) }}`.replace('0', gapId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshGaps();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error merging gap: ' + error);
+    });
+}
+
+function overrideGap(gapId) {
+    currentGapId = gapId;
+    document.getElementById('overrideModal').style.display = 'block';
+    document.getElementById('justification').value = '';
+}
+
+function closeOverrideModal() {
+    document.getElementById('overrideModal').style.display = 'none';
+    currentGapId = null;
+}
+
+document.getElementById('overrideForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const justification = document.getElementById('justification').value;
+    const formData = new FormData();
+    formData.append('justification', justification);
+    
+    fetch(`{{ url_for('constraints.override_gap', gap_id=0) }}`.replace('0', currentGapId), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshGaps();
+            closeOverrideModal();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error applying override: ' + error);
+    });
+});
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.gap-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+function mergeSelected() {
+    const selected = Array.from(document.querySelectorAll('.gap-checkbox:checked')).map(cb => parseInt(cb.value));
+    
+    if (selected.length === 0) {
+        alert('Please select gaps to merge');
+        return;
+    }
+    
+    if (!confirm(`Merge ${selected.length} selected gaps?`)) return;
+    
+    fetch(`{{ url_for('constraints.merge_gaps_batch') }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({gap_ids: selected})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshGaps();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error merging gaps: ' + error);
+    });
+}
+
+function mergeAllMergeable() {
+    // Get all mergeable gaps
+    const mergeableCheckboxes = [];
+    document.querySelectorAll('tr').forEach(row => {
+        const mergeButton = row.querySelector('button[onclick^="mergeGap"]');
+        const checkbox = row.querySelector('.gap-checkbox');
+        if (mergeButton && checkbox) {
+            mergeableCheckboxes.push(parseInt(checkbox.value));
+        }
+    });
+    
+    if (mergeableCheckboxes.length === 0) {
+        alert('No mergeable gaps found');
+        return;
+    }
+    
+    if (!confirm(`Merge all ${mergeableCheckboxes.length} mergeable gaps?`)) return;
+    
+    fetch(`{{ url_for('constraints.merge_gaps_batch') }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({gap_ids: mergeableCheckboxes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshGaps();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error merging gaps: ' + error);
+    });
+}
+
+// Load gaps on page load and set up event handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const termSelect = document.getElementById('termSelect');
+    
+    function updateFormActions() {
+        const termId = termSelect.value;
+        if (termId) {
+            document.getElementById('policyForm').action = `/constraints/gap-management/policy/${termId}`;
+            document.getElementById('scheduleForm').action = `/constraints/gap-management/generate-schedule/${termId}`;
+            refreshGaps();
+        }
+    }
+    
+    // Set up term selection handler
+    termSelect.addEventListener('change', updateFormActions);
+    
+    // Initial load if term is already selected
+    if (termSelect.value) {
+        updateFormActions();
+    }
+});
+</script>
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a> | 
+<a href="{{ url_for('auth.shiftManagement') }}">🏠 Dashboard</a>
+{% endblock %}

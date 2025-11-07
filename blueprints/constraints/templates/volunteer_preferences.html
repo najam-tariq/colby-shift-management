@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Volunteer Preferences - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.volunteer-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.preferences-list {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preference-item {
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    background: #f9f9f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preference-info {
+    flex-grow: 1;
+}
+
+.preference-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.preference-details {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.preference-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-right: 1rem;
+}
+
+.preference-badge.early {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.preference-badge.late {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.preference-badge.both {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.btn-group {
+    gap: 0.5rem;
+    display: flex;
+}
+
+.help-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.stats-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Volunteer Preferences{% endblock %}
+{% block header_subtitle %}Mark students as volunteers for early morning or late evening shifts{% endblock %}
+
+{% block content %}
+<div class="stats-section">
+    <h3>Current Volunteer Statistics</h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number">{{ preferences|selectattr('0.preference_type', 'equalto', 'early')|list|length }}</div>
+            <div class="stat-label">Early Volunteers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ preferences|selectattr('0.preference_type', 'equalto', 'late')|list|length }}</div>
+            <div class="stat-label">Late Volunteers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ preferences|selectattr('0.preference_type', 'equalto', 'both')|list|length }}</div>
+            <div class="stat-label">Both Volunteers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ preferences|length }}</div>
+            <div class="stat-label">Total Volunteers</div>
+        </div>
+    </div>
+</div>
+
+<div class="volunteer-form">
+    <h2>Add Volunteer Preference</h2>
+    <form id="volunteerForm">
+        <div class="form-section">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="user_id">Student</label>
+                    <select id="user_id" name="user_id" required>
+                        <option value="">Select a student</option>
+                        {% for user in users %}
+                        <option value="{{ user.user_id }}">{{ user.name }} ({{ user.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="term_id">Term</label>
+                    <select id="term_id" name="term_id" required>
+                        <option value="">Select a term</option>
+                        {% for term in terms %}
+                        <option value="{{ term.term_id }}">{{ term.term_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="preference_type">Preference Type</label>
+                    <select id="preference_type" name="preference_type" required>
+                        <option value="">Select type</option>
+                        <option value="early">Early Shifts Only</option>
+                        <option value="late">Late Shifts Only</option>
+                        <option value="both">Both Early and Late</option>
+                    </select>
+                    <div class="help-text">What type of undesirable shifts can this student work?</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" placeholder="Additional notes about this volunteer preference..."></textarea>
+                    <div class="help-text">Any special considerations or limitations</div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Volunteer Preference</button>
+    </form>
+</div>
+
+<div class="preferences-list">
+    <h2>Current Volunteer Preferences</h2>
+    {% if preferences %}
+        {% for preference, user, term in preferences %}
+        <div class="preference-item" data-preference-id="{{ preference.preference_id }}">
+            <div class="preference-info">
+                <h4>{{ user.name }}</h4>
+                <div class="preference-details">
+                    <strong>Term:</strong> {{ term.term_name }} | 
+                    <strong>Email:</strong> {{ user.email }} | 
+                    <strong>Added:</strong> {{ preference.created_date.strftime('%Y-%m-%d') }}
+                    {% if preference.notes %}
+                    <br><strong>Notes:</strong> {{ preference.notes }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="preference-actions">
+                <span class="preference-badge {{ preference.preference_type }}">
+                    {{ preference.preference_type.title() }}
+                </span>
+                <div class="btn-group">
+                    <button class="btn btn-danger btn-sm remove-preference" data-preference-id="{{ preference.preference_id }}">Remove</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No volunteer preferences set yet. Add some above to help with fair scheduling of early and late shifts.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('volunteerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Convert string values to appropriate types
+    data.user_id = parseInt(data.user_id);
+    data.term_id = parseInt(data.term_id);
+    
+    try {
+        const response = await fetch('{{ url_for("constraints.create_volunteer_preference") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Volunteer preference added successfully!');
+            location.reload();
+        } else {
+            alert('Error adding volunteer preference: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error adding volunteer preference: ' + error.message);
+    }
+});
+
+// Remove preference functionality
+document.querySelectorAll('.remove-preference').forEach(button => {
+    button.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to remove this volunteer preference?')) {
+            return;
+        }
+        
+        const preferenceId = this.dataset.preferenceId;
+        
+        try {
+            const response = await fetch(`{{ url_for('constraints.remove_volunteer_preference', preference_id=0) }}`.replace('0', preferenceId), {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Volunteer preference removed successfully!');
+                location.reload();
+            } else {
+                alert('Error removing volunteer preference: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error removing volunteer preference: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Shift Duration Validation - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.validation-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.form-group input, .form-group select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.validation-result {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 4px;
+    display: none;
+}
+
+.validation-result.valid {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.validation-result.invalid {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.constraints-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.constraint-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.constraint-item:last-child {
+    border-bottom: none;
+}
+
+.constraint-value {
+    font-weight: 600;
+    color: #007bff;
+}
+
+.help-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.test-cases {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.test-case {
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    background: #f9f9f9;
+}
+
+.test-case h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.test-case-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Shift Duration Validation{% endblock %}
+{% block header_subtitle %}Test and demonstrate shift length constraint enforcement (Issue #26){% endblock %}
+
+{% block content %}
+<div class="constraints-info">
+    <h3>Policy Constraints Overview</h3>
+    <div id="constraintsDisplay">
+        <p>Select a term to view its policy constraints.</p>
+    </div>
+</div>
+
+<div class="validation-form">
+    <h2>Test Shift Duration Validation</h2>
+    <form id="validationForm">
+        <div class="form-section">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="term_id">Term</label>
+                    <select id="term_id" name="term_id" required>
+                        <option value="">Select a term</option>
+                        {% for term in terms %}
+                        <option value="{{ term.term_id }}">{{ term.term_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="time" id="start_time" name="start_time" required>
+                    <div class="help-text">Shift start time</div>
+                </div>
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="time" id="end_time" name="end_time" required>
+                    <div class="help-text">Shift end time</div>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Validate Shift</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="validationResult" class="validation-result">
+            <div id="resultMessage"></div>
+        </div>
+    </form>
+</div>
+
+<div class="test-cases">
+    <h2>Common Test Cases</h2>
+    
+    <div class="test-case">
+        <h4>Test Case 1: Valid 2-hour shift</h4>
+        <div class="test-case-controls">
+            <button class="btn btn-secondary test-button" 
+                    data-start="09:00" data-end="11:00">
+                Test 9:00 AM - 11:00 AM
+            </button>
+            <span>Expected: ✅ Valid (2 hours = 120 minutes)</span>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h4>Test Case 2: Too short (30 minutes)</h4>
+        <div class="test-case-controls">
+            <button class="btn btn-secondary test-button" 
+                    data-start="10:00" data-end="10:30">
+                Test 10:00 AM - 10:30 AM
+            </button>
+            <span>Expected: ❌ Below minimum (30 minutes)</span>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h4>Test Case 3: Too long (4 hours)</h4>
+        <div class="test-case-controls">
+            <button class="btn btn-secondary test-button" 
+                    data-start="08:00" data-end="12:00">
+                Test 8:00 AM - 12:00 PM
+            </button>
+            <span>Expected: ❌ Exceeds maximum (4 hours = 240 minutes)</span>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h4>Test Case 4: Minimum valid shift (1 hour)</h4>
+        <div class="test-case-controls">
+            <button class="btn btn-secondary test-button" 
+                    data-start="14:00" data-end="15:00">
+                Test 2:00 PM - 3:00 PM
+            </button>
+            <span>Expected: ✅ Valid (1 hour = 60 minutes)</span>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h4>Test Case 5: Maximum valid shift (3 hours)</h4>
+        <div class="test-case-controls">
+            <button class="btn btn-secondary test-button" 
+                    data-start="16:00" data-end="19:00">
+                Test 4:00 PM - 7:00 PM
+            </button>
+            <span>Expected: ✅ Valid (3 hours = 180 minutes)</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+let currentConstraints = null;
+
+// Load constraints when term is selected
+document.getElementById('term_id').addEventListener('change', async function() {
+    const termId = this.value;
+    if (!termId) {
+        document.getElementById('constraintsDisplay').innerHTML = '<p>Select a term to view its policy constraints.</p>';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{{ url_for('constraints.get_shift_constraints', term_id=0) }}`.replace('0', termId));
+        const data = await response.json();
+        
+        if (data.success) {
+            currentConstraints = data.constraints;
+            displayConstraints(data.constraints);
+        } else {
+            document.getElementById('constraintsDisplay').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+        }
+    } catch (error) {
+        document.getElementById('constraintsDisplay').innerHTML = `<p style="color: red;">Error loading constraints: ${error.message}</p>`;
+    }
+});
+
+function displayConstraints(constraints) {
+    document.getElementById('constraintsDisplay').innerHTML = `
+        <div class="constraint-item">
+            <span>Minimum Shift Length:</span>
+            <span class="constraint-value">${constraints.min_shift_length} minutes (${Math.floor(constraints.min_shift_length/60)}h ${constraints.min_shift_length%60}m)</span>
+        </div>
+        <div class="constraint-item">
+            <span>Maximum Shift Length:</span>
+            <span class="constraint-value">${constraints.max_shift_length} minutes (${Math.floor(constraints.max_shift_length/60)}h ${constraints.max_shift_length%60}m)</span>
+        </div>
+        <div class="constraint-item">
+            <span>Term:</span>
+            <span class="constraint-value">${constraints.term_name || constraints.term_id}</span>
+        </div>
+    `;
+}
+
+// Validation form submission
+document.getElementById('validationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    await validateShift(data.term_id, data.start_time, data.end_time);
+});
+
+// Test case buttons
+document.querySelectorAll('.test-button').forEach(button => {
+    button.addEventListener('click', async function() {
+        const termId = document.getElementById('term_id').value;
+        if (!termId) {
+            alert('Please select a term first');
+            return;
+        }
+        
+        const startTime = this.dataset.start;
+        const endTime = this.dataset.end;
+        
+        // Update form fields
+        document.getElementById('start_time').value = startTime;
+        document.getElementById('end_time').value = endTime;
+        
+        await validateShift(termId, startTime, endTime);
+    });
+});
+
+async function validateShift(termId, startTime, endTime) {
+    try {
+        const response = await fetch('{{ url_for("constraints.validate_shift_duration") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                term_id: parseInt(termId),
+                start_time: startTime,
+                end_time: endTime
+            })
+        });
+        
+        const result = await response.json();
+        const resultDiv = document.getElementById('validationResult');
+        const messageDiv = document.getElementById('resultMessage');
+        
+        resultDiv.style.display = 'block';
+        
+        if (result.valid) {
+            resultDiv.className = 'validation-result valid';
+            messageDiv.innerHTML = `
+                <strong>✅ Valid Shift</strong><br>
+                <strong>Duration:</strong> ${calculateDuration(startTime, endTime)} minutes<br>
+                <strong>Times:</strong> ${startTime} - ${endTime}
+            `;
+        } else {
+            resultDiv.className = 'validation-result invalid';
+            messageDiv.innerHTML = `
+                <strong>❌ Invalid Shift</strong><br>
+                <strong>Error:</strong> ${result.message}<br>
+                <strong>Duration:</strong> ${calculateDuration(startTime, endTime)} minutes<br>
+                <strong>Times:</strong> ${startTime} - ${endTime}
+                ${result.policy ? `<br><strong>Policy:</strong> ${result.policy.min_duration}-${result.policy.max_duration} minutes allowed` : ''}
+            `;
+        }
+    } catch (error) {
+        const resultDiv = document.getElementById('validationResult');
+        const messageDiv = document.getElementById('resultMessage');
+        
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'validation-result invalid';
+        messageDiv.innerHTML = `<strong>❌ Validation Error:</strong> ${error.message}`;
+    }
+}
+
+function calculateDuration(startTime, endTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    
+    // Handle overnight shifts
+    if (duration < 0) {
+        duration += 24 * 60;
+    }
+    
+    return duration;
+}
+</script>
+{% endblock %}

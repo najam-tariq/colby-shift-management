@@ -9,5 +9,3 @@ outputs_bp = Blueprint(
     static_url_path='/outputs/static'
 )
 
-from . import routes
-

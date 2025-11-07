@@ -4,20 +4,89 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('outputs.static', filename='outputs.css') }}">
 {% endblock %}
 
 {% block header_title %}Outputs & Access{% endblock %}
 {% block header_subtitle %}Export schedules, preview, and manage student access{% endblock %}
 
 {% block content %}
-<div class="dashboard-options">
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>GitHub Issues #40-49</h3>
-            <p>Live preview, CSV export, iCal generation, student views, etc.</p>
+{% if current_user.role.lower() == 'student' %}
+    {# Student View - Only show their own schedule #}
+    <div class="dashboard-options">
+        <a href="{{ url_for('outputs.student_view', user_id=current_user.user_id) }}" class="dashboard-btn">
+            <div class="btn-content">
+                <h3>📅 My Schedule</h3>
+                <p>View your personal shift schedule</p>
+            </div>
+        </a>
+        
+        <a href="https://calendar.google.com/calendar/r?cid={{ ('webcal://' + request.host + url_for('outputs.export_ical_student', token=current_user.calendar_token)) | urlencode }}" 
+           class="dashboard-btn"
+           target="_blank">
+            <div class="btn-content">
+                <h3>📅 Add to Google Calendar</h3>
+                <p>Subscribe to your auto-updating shift calendar</p>
+            </div>
+        </a>
+    </div>
+{% else %}
+    {# Supervisor View - Show all options #}
+    <div class="dashboard-options">
+        {% if term %}
+        <div class="dashboard-btn secondary full-width">
+            <div class="btn-content">
+                <h3>📊 Current Term: {{ term.name }}</h3>
+                <p>{{ shift_count }} shifts | {{ student_count }} students | {{ term.start_date }} to {{ term.end_date }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {# Row 1: Combined Schedule + All Student Schedules #}
+        <div class="dashboard-row">
+            <a href="{{ url_for('outputs.preview') }}" class="dashboard-btn">
+                <div class="btn-content">
+                   <h3>📅 Combined Schedule</h3>
+                   <p>View all shifts in one time-grid calendar</p>
+                </div>
+            </a>
+            
+            <a href="{{ url_for('outputs.all_students_view') }}" class="dashboard-btn">
+                <div class="btn-content">
+                    <h3>👥 All Student Schedules</h3>
+                    <p>View individual schedules for each student</p>
+                </div>
+            </a>
+        </div>
+        
+        {# Row 2: Export CSV + Export iCal #}
+        <div class="dashboard-row">
+               <a href="{{ url_for('outputs.export_csv') }}" class="dashboard-btn">
+                   <div class="btn-content">
+                       <h3>📄 Export CSV</h3>
+                       <p>Download schedule as CSV file</p>
+                   </div>
+               </a>
+            
+            {% if icalendar_available %}
+            <a href="{{ url_for('outputs.export_ical') }}" class="dashboard-btn">
+                <div class="btn-content">
+                    <h3>📆 Export iCal (Combined)</h3>
+                    <p>Download all shifts as single .ics calendar file</p>
+                </div>
+            </a>
+            {% else %}
+            <div class="dashboard-btn secondary">
+                <div class="btn-content">
+                    <h3>📆 Export iCal (Unavailable)</h3>
+                    <p>Run: pip install icalendar</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
+{% endif %}
+
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}

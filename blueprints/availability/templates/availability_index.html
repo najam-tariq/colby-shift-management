@@ -18,6 +18,27 @@
             </div>
 
             <div class="section-content">
+                <!-- Term Selection -->
+                <div class="term-selector-section">
+                    {% if available_terms %}
+                    <div class="term-selector">
+                        <label for="term_select" class="term-label"><strong>Select Term:</strong></label>
+                        <select id="term_select" class="term-dropdown" onchange="changeAvailabilityTerm(this.value)">
+                            <option value="">-- Choose a Term --</option>
+                            {% for t in available_terms %}
+                            <option value="{{ t.term_id }}" {% if active_term and t.term_id==active_term.term_id
+                                %}selected{% endif %}>{{ t.name }} ({{ t.start_date.strftime('%m/%d') }} - {{
+                                t.end_date.strftime('%m/%d') }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <div class="no-terms-message">
+                        <p>No terms defined yet. Create a term first on the Staffing page.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
                 <form method="POST" enctype="multipart/form-data">
                     <!-- CSV Upload Area -->
                     <div class="upload-area">
@@ -27,6 +48,7 @@
                             <input type="file" name="csv_file" accept=".csv" class="file-input" id="csvFile">
                             <label for="csvFile" class="file-input-label">Choose File</label>
                         </div>
+                        <input type="hidden" name="term_id" value="{{ active_term.term_id if active_term }}">
                         <button type="submit" name="action" value="upload" class="btn-primary"
                             style="margin-left: 1rem;">
                             Upload & Process
@@ -87,6 +109,7 @@ Jane Smith,Tuesday,13:00,17:30</pre>
                     </table>
 
                     <div class="form-actions">
+                        <input type="hidden" name="term_id" value="{{ active_term.term_id if active_term }}">
                         <button type="submit" name="action" value="update" class="btn-primary">
                             💾 Save Changes
                         </button>
@@ -134,6 +157,14 @@ Jane Smith,Tuesday,13:00,17:30</pre>
 
         const button = document.querySelector('.guide-toggle');
         button.textContent = isHidden ? '📘 Hide CSV Guide' : '📘 View CSV Format Guide';
+    }
+
+    function changeAvailabilityTerm(termId) {
+        if (termId) {
+            const url = new URL(window.location);
+            url.searchParams.set('term_id', termId);
+            window.location.href = url.toString();
+        }
     }
 
     function clearAllAvailability() {

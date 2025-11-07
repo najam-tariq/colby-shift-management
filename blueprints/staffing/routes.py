@@ -11,6 +11,11 @@ def index():
     print(f"DEBUG: Request method: {request.method}", flush=True)
     if request.method == 'POST':
         print("DEBUG: POST request received!", flush=True)
+    # Module sanity: confirm latest code loaded
+    try:
+        _sentinel_version = 'update_coverage_v2_json_debug'
+    except Exception:
+        pass
         
     # Get selected term from query parameter or default to first available
     selected_term_id = request.args.get('term_id', type=int)
@@ -181,9 +186,14 @@ def index():
                 # Map int day_of_week -> name used in Availability.day_of_week
                 day_name_map = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
                 day_name = day_name_map[day_of_week]
+                # Accept either full day name ("Monday") or 3-letter abbreviation ("Mon") used by availability module
+                from sqlalchemy import or_
                 avail_q = Availability.query.filter(
                     Availability.term_id == term.term_id,
-                    Availability.day_of_week == day_name
+                    or_(
+                        Availability.day_of_week == day_name,
+                        Availability.day_of_week == day_name[:3]
+                    )
                 ).all()
                 if avail_q:
                     fully_covering_users = set()
@@ -358,12 +368,206 @@ def index():
                 flash(f'Error clearing coverage requirements: {str(e)}', 'error')
                 db.session.rollback()
         
+        elif action == 'update_coverage':
+            # Inline update of existing coverage requirement (reuse validation logic)
+            try:
+                print(f"DEBUG:update_coverage fetch flag={request.form.get('fetch')} raw_form={dict(request.form)}", flush=True)
+                need_id = int(request.form.get('need_id'))
+                need = StaffingNeeds.query.get(need_id)
+                if not need:
+                    flash('Coverage requirement not found.', 'error')
+                    # Support fetch-based inline updates: return JSON when requested
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': ['Not found']}), 404
+                    return redirect(url_for('staffing.index'))
+
+                # Extract new values
+                new_day = int(request.form.get('day_of_week'))
+                new_start = datetime.strptime(request.form.get('start_time'), '%H:%M').time()
+                new_end = datetime.strptime(request.form.get('end_time'), '%H:%M').time()
+                new_role = request.form.get('role_required')
+                new_count = int(request.form.get('required_count'))
+
+                term = need.term
+                if term.locked:
+                    flash('Term is locked; cannot modify coverage.', 'error')
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': ['Term locked']}), 400
+                    return redirect(url_for('staffing.index', term_id=term.term_id))
+
+                # Basic validations (reuse existing approach)
+                errors = []
+                # Duration
+                if new_start >= new_end:
+                    errors.append('Start time must be before end time.')
+                # Headcount vs active users
+                active_role_users = User.query.filter_by(role=new_role, is_active=True).count()
+                if active_role_users and new_count > active_role_users:
+                    errors.append(f'Required count ({new_count}) exceeds active {new_role} count ({active_role_users}).')
+                # Overlap check (excluding current need)
+                overlap = StaffingNeeds.query.filter(
+                    StaffingNeeds.term_id == term.term_id,
+                    StaffingNeeds.need_id != need.need_id,
+                    StaffingNeeds.day_of_week == new_day,
+                    StaffingNeeds.role_required == new_role,
+                    (
+                        ((StaffingNeeds.start_time <= new_start) & (StaffingNeeds.end_time > new_start)) |
+                        ((StaffingNeeds.start_time < new_end) & (StaffingNeeds.end_time >= new_end)) |
+                        ((StaffingNeeds.start_time >= new_start) & (StaffingNeeds.end_time <= new_end))
+                    )
+                ).first()
+                if overlap:
+                    errors.append('Updated time window overlaps an existing requirement for this role.')
+
+                if errors:
+                    for e in errors:
+                        flash(e, 'error')
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': errors}), 400
+                    return redirect(url_for('staffing.index', term_id=term.term_id))
+
+                # Apply update
+                need.day_of_week = new_day
+                need.start_time = new_start
+                need.end_time = new_end
+                need.role_required = new_role
+                need.required_count = new_count
+                db.session.commit()
+                flash('Coverage requirement updated.', 'success')
+                if request.form.get('fetch') == '1':
+                    print(f"DEBUG:update_coverage returning JSON for need_id={need.need_id}", flush=True)
+                    return jsonify({
+                        'ok': True,
+                        'need': {
+                            'need_id': need.need_id,
+                            'day_of_week': need.day_of_week,
+                            'start_time': need.start_time.strftime('%H:%M'),
+                            'end_time': need.end_time.strftime('%H:%M'),
+                            'role_required': need.role_required,
+                            'required_count': need.required_count
+                        }
+                    })
+            except Exception as e:
+                flash(f'Error updating coverage requirement: {str(e)}', 'error')
+                db.session.rollback()
+                if request.form.get('fetch') == '1':
+                    print(f"DEBUG:update_coverage exception: {e}", flush=True)
+                    return jsonify({'ok': False, 'errors': [str(e)]}), 500
+
+        # If this was a fetch-based update_coverage but we somehow did not return JSON above, provide a fallback to avoid HTML redirect.
+        if action == 'update_coverage' and request.form.get('fetch') == '1':
+            try:
+                need_id = int(request.form.get('need_id'))
+                need = StaffingNeeds.query.get(need_id)
+                if need:
+                    print("DEBUG: Fallback JSON response triggered (unexpected)", flush=True)
+                    return jsonify({
+                        'ok': True,
+                        'need': {
+                            'need_id': need.need_id,
+                            'day_of_week': need.day_of_week,
+                            'start_time': need.start_time.strftime('%H:%M'),
+                            'end_time': need.end_time.strftime('%H:%M'),
+                            'role_required': need.role_required,
+                            'required_count': need.required_count
+                        },
+                        'fallback': True
+                    })
+                else:
+                    return jsonify({'ok': False, 'errors': ['Need missing in fallback'] }), 500
+            except Exception as e:
+                return jsonify({'ok': False, 'errors': [f'Fallback error: {e}'] }), 500
         return redirect(url_for('staffing.index'))
     
+    # Helper: Analyze staffing coverage gaps for selected term
+    def analyze_staffing_gaps(term):
+        gaps = []
+        if not term:
+            return gaps
+        day_name_map = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+        needs = StaffingNeeds.query.filter_by(term_id=term.term_id).all()
+        # Pre-fetch availability by day for performance
+        avail_by_day = {d: [] for d in day_name_map}
+        abbr_to_full = {
+            'Mon':'Monday','Tue':'Tuesday','Wed':'Wednesday','Thu':'Thursday','Fri':'Friday','Sat':'Saturday','Sun':'Sunday'
+        }
+        for a in Availability.query.filter_by(term_id=term.term_id).all():
+            day_full = abbr_to_full.get(a.day_of_week[:3].capitalize(), a.day_of_week)
+            avail_by_day.setdefault(day_full, []).append(a)
+        # Active users per role
+        active_role_counts = {r: User.query.filter_by(role=r, is_active=True).count() for r in ['student','supervisor','manager']}
+        today_anchor = datetime.today()
+        def hours(t1, t2):
+            return (datetime.combine(today_anchor, t2) - datetime.combine(today_anchor, t1)).seconds / 3600.0
+        # Aggregate availability hours for student role (heuristic capacity)
+        student_total_avail_hours = sum(hours(a.start_time, a.end_time) for a in Availability.query.filter_by(term_id=term.term_id).all() if getattr(a, 'day_of_week', None))
+        cumulative_required_hours = 0.0
+        for n in needs:
+            window_hours = hours(n.start_time, n.end_time)
+            cumulative_required_hours += window_hours * n.required_count
+            day_label = day_name_map[n.day_of_week]
+            day_avails = avail_by_day.get(day_label, [])
+            fully_covering = 0
+            partial_covering = 0
+            for a in day_avails:
+                if a.start_time <= n.start_time and a.end_time >= n.end_time:
+                    fully_covering += 1
+                elif not (a.end_time <= n.start_time or a.start_time >= n.end_time):
+                    partial_covering += 1
+            active_role = active_role_counts.get(n.role_required, 0)
+            severity = None
+            reasons = []
+            suggestions = []
+            # Critical conditions
+            if active_role == 0:
+                severity = 'critical'
+                reasons.append(f'No active users with role {n.role_required}.')
+                suggestions.append('Add users or change role requirement.')
+            elif fully_covering == 0:
+                severity = 'critical'
+                reasons.append('No fully available users for entire window.')
+                if partial_covering > 0:
+                    reasons.append(f'{partial_covering} users have partial overlap but cannot cover entire window.')
+                suggestions.append('Collect more availability or shorten/shift window; consider splitting into smaller blocks.')
+            elif n.required_count > active_role:
+                severity = 'critical'
+                reasons.append(f'Required count {n.required_count} exceeds active {n.role_required} count {active_role}.')
+                suggestions.append('Reduce required count or recruit more staff.')
+            # High severity
+            if severity is None and fully_covering < n.required_count:
+                severity = 'high'
+                reasons.append(f'Only {fully_covering} fully available vs required {n.required_count}.')
+                suggestions.append('Adjust window, gather more availability, or reduce requirement.')
+            # Medium severity
+            if severity is None and fully_covering >= n.required_count and partial_covering > 0:
+                severity = 'medium'
+                reasons.append(f'Partial overlaps detected ({partial_covering}).')
+                suggestions.append('Investigate partial conflicts; consider splitting window.')
+            # Capacity heuristic (low)
+            if n.role_required == 'student' and student_total_avail_hours and cumulative_required_hours > student_total_avail_hours * 1.1:
+                if severity is None:
+                    severity = 'low'
+                reasons.append('Cumulative required hours trending above availability capacity.')
+                suggestions.append('Review aggregate workload or gather more availability.')
+            if severity:
+                gaps.append({
+                    'day': day_label,
+                    'start': n.start_time.strftime('%H:%M'),
+                    'end': n.end_time.strftime('%H:%M'),
+                    'role': n.role_required,
+                    'required': n.required_count,
+                    'full_available': fully_covering,
+                    'partial_available': partial_covering,
+                    'severity': severity,
+                    'reasons': reasons,
+                    'suggestions': suggestions
+                })
+        return gaps
+
     # GET request - display the staffing needs
     try:
         staffing_needs = []
-        
+
         if selected_term:
             staffing_needs = StaffingNeeds.query.filter(
                 StaffingNeeds.term_id == selected_term.term_id
@@ -371,15 +575,15 @@ def index():
                 StaffingNeeds.day_of_week,
                 StaffingNeeds.start_time
             ).all()
-        
+
         # Organize data for visual display
         visual_data = {}
         day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        
+
         for day_idx, day_name in enumerate(day_names):
             visual_data[day_name] = []
             day_needs = [need for need in staffing_needs if need.day_of_week == day_idx]
-            
+
             for need in day_needs:
                 visual_data[day_name].append({
                     'start_time': need.start_time.strftime('%H:%M'),
@@ -387,20 +591,22 @@ def index():
                     'role': need.role_required,
                     'count': need.required_count
                 })
-        
-        return render_template('staffing_index.html', 
-                             staffing_needs=staffing_needs,
-                             visual_data=visual_data,
-                             day_names=day_names,
-                             available_terms=available_terms,
-                             selected_term=selected_term)
-        
+
+        gap_warnings = analyze_staffing_gaps(selected_term)
+        return render_template('staffing_index.html',
+                               staffing_needs=staffing_needs,
+                               visual_data=visual_data,
+                               day_names=day_names,
+                               available_terms=available_terms,
+                               selected_term=selected_term,
+                               gap_warnings=gap_warnings)
     except Exception as e:
         flash(f'Error loading staffing data: {str(e)}', 'error')
-        return render_template('staffing_index.html', 
-                             staffing_needs=[],
-                             visual_data={},
-                             day_names=[],
-                             available_terms=available_terms,
-                             selected_term=selected_term)
+        return render_template('staffing_index.html',
+                               staffing_needs=[],
+                               visual_data={},
+                               day_names=[],
+                               available_terms=available_terms,
+                               selected_term=selected_term,
+                               gap_warnings=[])
 

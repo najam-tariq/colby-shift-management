@@ -26,6 +26,61 @@
         margin-top: 1.5rem;
         padding-top: 0.75rem;
     }
+    
+    .violation-alert-widget {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .violation-alert-widget:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .violation-alert-widget.critical {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border-color: #f5c6cb;
+    }
+    
+    .violation-alert-widget.none {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-color: #c3e6cb;
+    }
+    
+    .violation-count {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .violation-text {
+        color: #666;
+        margin: 0.5rem 0 0 0;
+        font-weight: 500;
+    }
+    
+    .violation-breakdown {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .breakdown-item {
+        text-align: center;
+    }
+    
+    .breakdown-item strong {
+        display: block;
+        color: #333;
+    }
 </style>
 {% endblock %}
 
@@ -33,6 +88,46 @@
 {% block header_subtitle %}Role: {{ current_user.role.title() }}{% endblock %}
 
 {% block content %}
+<!-- Violation Alert Widget (Issue #30) -->
+{% if violation_summary and violation_summary.total_violations > 0 %}
+<div class="violation-alert-widget {% if violation_summary.by_severity.critical > 0 %}critical{% elif violation_summary.by_severity.error > 0 %}warning{% endif %}" 
+     data-href="{{ url_for('constraints.violation_alerts') }}" style="cursor: pointer;">
+    <div class="violation-count">{{ violation_summary.total_violations }}</div>
+    <div class="violation-text">
+        {% if violation_summary.total_violations == 1 %}
+            Active Shift Violation
+        {% else %}
+            Active Shift Violations
+        {% endif %}
+    </div>
+    <div class="violation-breakdown">
+        {% if violation_summary.by_severity.critical > 0 %}
+        <div class="breakdown-item">
+            <strong>{{ violation_summary.by_severity.critical }}</strong>
+            Critical
+        </div>
+        {% endif %}
+        {% if violation_summary.by_severity.error > 0 %}
+        <div class="breakdown-item">
+            <strong>{{ violation_summary.by_severity.error }}</strong>
+            Error
+        </div>
+        {% endif %}
+        {% if violation_summary.by_severity.warning > 0 %}
+        <div class="breakdown-item">
+            <strong>{{ violation_summary.by_severity.warning }}</strong>
+            Warning
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% elif violation_summary %}
+<div class="violation-alert-widget none" data-href="{{ url_for('constraints.violation_alerts') }}" style="cursor: pointer;">
+    <div class="violation-count">✓</div>
+    <div class="violation-text">No Active Violations</div>
+</div>
+{% endif %}
+
 <div class="dashboard-options">
     <a href="{{ url_for('availability.availability') }}" class="dashboard-btn secondary">
         <div class="btn-content">
@@ -79,6 +174,20 @@
 
    
 </div>
+
+<script>
+// Handle violation widget clicks
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.violation-alert-widget[data-href]').forEach(widget => {
+        widget.addEventListener('click', function() {
+            const href = this.getAttribute('data-href');
+            if (href) {
+                location.href = href;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.logout') }}">Sign out</a> | <a href="#">Help & Support</a>{% endblock %}

@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings - Shift Duration Policies{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.admin-panel {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.admin-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.admin-section h2 {
+    color: #333;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #007bff;
+}
+
+.policy-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.validation-feedback {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: none;
+}
+
+.validation-feedback.error {
+    background: #ffe6e6;
+    color: #d63384;
+    border: 1px solid #f5c6cb;
+}
+
+.validation-feedback.success {
+    background: #e6ffe6;
+    color: #198754;
+    border: 1px solid #c6f5cb;
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.current-policies {
+    margin-top: 2rem;
+}
+
+.policy-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.policy-card h4 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.policy-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.policy-detail {
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.policy-detail strong {
+    display: block;
+    color: #495057;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.audit-log {
+    margin-top: 2rem;
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.audit-table th,
+.audit-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.audit-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.audit-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.change-type {
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.change-type.create {
+    background: #d4edda;
+    color: #155724;
+}
+
+.change-type.update {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.change-type.delete {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.default-notice {
+    background: #e7f3ff;
+    border: 1px solid #b8daff;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    color: #004085;
+}
+
+.default-notice strong {
+    color: #002752;
+}
+
+@media (max-width: 768px) {
+    .policy-form {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .policy-details {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Admin Settings{% endblock %}
+{% block header_subtitle %}Configure shift duration policies and view audit logs (Issue #29){% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <!-- Default Values Notice -->
+    <div class="default-notice">
+        <strong>Default Policy Values:</strong> When no custom policy exists for a term, the system uses these defaults: 
+        Shift Length: {{ default_values.min_shift_length }}-{{ default_values.max_shift_length }} minutes, 
+        Break Time: {{ default_values.min_break_length }}-{{ default_values.max_break_length }} minutes,
+        Undesirable Window: {{ "%04d"|format(default_values.undesireable_start) }}-{{ "%04d"|format(default_values.undesireable_end) }}
+    </div>
+
+    <!-- Policy Configuration Section -->
+    <div class="admin-section">
+        <h2>Create/Update Shift Duration Policy</h2>
+        
+        <form id="adminPolicyForm">
+            <div class="policy-form">
+                <!-- Left Column -->
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="term_id">Term *</label>
+                        <select id="term_id" name="term_id" required>
+                            <option value="">Select a term</option>
+                            {% for term in terms %}
+                            <option value="{{ term.term_id }}">{{ term.name }} ({{ term.start_date }} - {{ term.end_date }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="help-text">Select the academic term for this policy</div>
+                        <div class="validation-feedback" id="term_id_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="min_shift_length">Minimum Shift Length (minutes) *</label>
+                        <input type="number" id="min_shift_length" name="min_shift_length" 
+                               value="{{ default_values.min_shift_length }}" min="30" max="240" required>
+                        <div class="help-text">Minimum: 30 minutes, Maximum: 4 hours (240 minutes)</div>
+                        <div class="validation-feedback" id="min_shift_length_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max_shift_length">Maximum Shift Length (minutes) *</label>
+                        <input type="number" id="max_shift_length" name="max_shift_length" 
+                               value="{{ default_values.max_shift_length }}" min="60" max="480" required>
+                        <div class="help-text">Minimum: 1 hour (60 minutes), Maximum: 8 hours (480 minutes)</div>
+                        <div class="validation-feedback" id="max_shift_length_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="min_break_length">Minimum Break Length (minutes) *</label>
+                        <input type="number" id="min_break_length" name="min_break_length" 
+                               value="{{ default_values.min_break_length }}" min="0" max="1440" required>
+                        <div class="help-text">Minimum time between consecutive shifts (0-1440 minutes)</div>
+                        <div class="validation-feedback" id="min_break_length_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max_break_length">Maximum Break Length (minutes)</label>
+                        <input type="number" id="max_break_length" name="max_break_length" 
+                               value="{{ default_values.max_break_length }}" min="60" max="2880">
+                        <div class="help-text">Maximum gap before requiring new scheduling block</div>
+                        <div class="validation-feedback" id="max_break_length_feedback"></div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="undesirable_start">Undesirable Start Time (24-hour format) *</label>
+                        <input type="number" id="undesirable_start" name="undesirable_start" 
+                               value="{{ default_values.undesireable_start }}" min="0" max="2359" required>
+                        <div class="help-text">Start of undesirable period (e.g., 600 = 6:00 AM)</div>
+                        <div class="validation-feedback" id="undesirable_start_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="undesirable_end">Undesirable End Time (24-hour format) *</label>
+                        <input type="number" id="undesirable_end" name="undesirable_end" 
+                               value="{{ default_values.undesireable_end }}" min="0" max="2359" required>
+                        <div class="help-text">End of undesirable period (e.g., 800 = 8:00 AM)</div>
+                        <div class="validation-feedback" id="undesirable_end_feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="change_reason">Reason for Change</label>
+                        <textarea id="change_reason" name="change_reason" rows="3" 
+                                  placeholder="Optional: Describe the reason for this policy change"></textarea>
+                        <div class="help-text">This will be recorded in the audit log</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Create/Update Policy</button>
+                <button type="button" class="btn btn-secondary" id="loadDefaultsBtn">Load Default Values</button>
+                <button type="button" class="btn btn-secondary" id="validateOnlyBtn">Validate Only</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Current Policies Section -->
+    <div class="admin-section">
+        <h2>Current Policies</h2>
+        <div class="current-policies">
+            {% if policies %}
+                {% for policy in policies %}
+                <div class="policy-card">
+                    <h4>
+                        {{ policy.term.name if policy.term else 'Unknown Term' }}
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-secondary load-policy" data-policy-id="{{ policy.policy_id }}">Load</button>
+                            <button class="btn btn-sm btn-info view-audit" data-policy-id="{{ policy.policy_id }}">View Audit</button>
+                        </div>
+                    </h4>
+                    
+                    <div class="policy-details">
+                        <div class="policy-detail">
+                            <strong>Shift Length</strong>
+                            {{ policy.min_shift_length }}-{{ policy.max_shift_length }} minutes
+                        </div>
+                        <div class="policy-detail">
+                            <strong>Break Time</strong>
+                            {{ policy.min_break_length }}-{{ policy.max_break_length }} minutes
+                        </div>
+                        <div class="policy-detail">
+                            <strong>Undesirable Window</strong>
+                            {{ "%04d"|format(policy.undesireable_start) }}-{{ "%04d"|format(policy.undesireable_end) }}
+                        </div>
+                        <div class="policy-detail">
+                            <strong>Last Updated</strong>
+                            {{ policy.updated_by_user.name if policy.updated_by_user else 'Unknown' }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No policies configured yet. Create one above to get started with custom settings.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Policy Changes Section -->
+    <div class="admin-section">
+        <h2>Recent Policy Changes</h2>
+        <div class="audit-log">
+            {% if recent_changes %}
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Change Type</th>
+                            <th>Policy/Term</th>
+                            <th>Field</th>
+                            <th>Old Value</th>
+                            <th>New Value</th>
+                            <th>Changed By</th>
+                            <th>Date</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for audit_log, policy, user in recent_changes %}
+                        <tr>
+                            <td><span class="change-type {{ audit_log.change_type }}">{{ audit_log.change_type|title }}</span></td>
+                            <td>{{ policy.term.name if policy.term else 'Unknown Term' }}</td>
+                            <td>{{ audit_log.field_name or '-' }}</td>
+                            <td>{{ audit_log.old_value or '-' }}</td>
+                            <td>{{ audit_log.new_value or '-' }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ audit_log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ audit_log.change_reason or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No policy changes recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+// Current policy being edited (null for create mode)
+let currentPolicyId = null;
+
+// Form validation
+function validateForm() {
+    let isValid = true;
+    const fields = ['term_id', 'min_shift_length', 'max_shift_length', 'min_break_length', 'undesirable_start', 'undesirable_end'];
+    
+    // Clear previous feedback
+    document.querySelectorAll('.validation-feedback').forEach(el => {
+        el.style.display = 'none';
+        el.className = 'validation-feedback';
+    });
+    
+    fields.forEach(field => {
+        const input = document.getElementById(field);
+        const feedback = document.getElementById(field + '_feedback');
+        
+        if (!input.value.trim()) {
+            showValidationError(feedback, 'This field is required');
+            isValid = false;
+        }
+    });
+    
+    // Validate shift lengths
+    const minShift = parseInt(document.getElementById('min_shift_length').value);
+    const maxShift = parseInt(document.getElementById('max_shift_length').value);
+    
+    if (minShift < 30) {
+        showValidationError(document.getElementById('min_shift_length_feedback'), 'Minimum shift length cannot be less than 30 minutes');
+        isValid = false;
+    }
+    if (minShift > 240) {
+        showValidationError(document.getElementById('min_shift_length_feedback'), 'Minimum shift length cannot exceed 4 hours (240 minutes)');
+        isValid = false;
+    }
+    if (maxShift < 60) {
+        showValidationError(document.getElementById('max_shift_length_feedback'), 'Maximum shift length cannot be less than 1 hour (60 minutes)');
+        isValid = false;
+    }
+    if (maxShift > 480) {
+        showValidationError(document.getElementById('max_shift_length_feedback'), 'Maximum shift length cannot exceed 8 hours (480 minutes)');
+        isValid = false;
+    }
+    if (minShift >= maxShift) {
+        showValidationError(document.getElementById('max_shift_length_feedback'), 'Maximum shift length must be greater than minimum shift length');
+        isValid = false;
+    }
+    
+    return isValid;
+}
+
+function showValidationError(element, message) {
+    element.textContent = message;
+    element.className = 'validation-feedback error';
+    element.style.display = 'block';
+}
+
+function showValidationSuccess(element, message) {
+    element.textContent = message;
+    element.className = 'validation-feedback success';
+    element.style.display = 'block';
+}
+
+// Form submission
+document.getElementById('adminPolicyForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+        return;
+    }
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Convert string values to appropriate types
+    data.term_id = parseInt(data.term_id);
+    data.min_shift_length = parseInt(data.min_shift_length);
+    data.max_shift_length = parseInt(data.max_shift_length);
+    data.min_break_length = parseInt(data.min_break_length);
+    data.max_break_length = parseInt(data.max_break_length || '{{ default_values.max_break_length }}');
+    data.undesirable_start = parseInt(data.undesirable_start);
+    data.undesirable_end = parseInt(data.undesirable_end);
+    
+    try {
+        let response;
+        if (currentPolicyId) {
+            // Update existing policy
+            response = await fetch(`{{ url_for("constraints.admin_update_policy", policy_id=0) }}`.replace('0', currentPolicyId), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+        } else {
+            // Create new policy
+            response = await fetch('{{ url_for("constraints.admin_create_policy") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(currentPolicyId ? 'Policy updated successfully!' : 'Policy created successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+
+// Load default values button
+document.getElementById('loadDefaultsBtn').addEventListener('click', function() {
+    document.getElementById('min_shift_length').value = '{{ default_values.min_shift_length }}';
+    document.getElementById('max_shift_length').value = '{{ default_values.max_shift_length }}';
+    document.getElementById('min_break_length').value = '{{ default_values.min_break_length }}';
+    document.getElementById('max_break_length').value = '{{ default_values.max_break_length }}';
+    document.getElementById('undesirable_start').value = '{{ default_values.undesireable_start }}';
+    document.getElementById('undesirable_end').value = '{{ default_values.undesireable_end }}';
+    document.getElementById('change_reason').value = 'Reset to default values';
+});
+
+// Validate only button
+document.getElementById('validateOnlyBtn').addEventListener('click', function() {
+    if (validateForm()) {
+        alert('✅ All values are valid and within acceptable ranges!');
+    } else {
+        alert('❌ Please fix the validation errors shown below.');
+    }
+});
+
+// Load policy into form
+document.querySelectorAll('.load-policy').forEach(button => {
+    button.addEventListener('click', function() {
+        const policyId = this.dataset.policyId;
+        // Find the policy data from the page
+        const policyCard = this.closest('.policy-card');
+        // For now, just indicate that this would load the policy
+        currentPolicyId = parseInt(policyId);
+        alert('Policy loaded for editing. Modify the values above and submit to update.');
+        document.getElementById('change_reason').value = 'Updated via admin panel';
+    });
+});
+
+// View audit log
+document.querySelectorAll('.view-audit').forEach(button => {
+    button.addEventListener('click', async function() {
+        const policyId = this.dataset.policyId;
+        
+        try {
+            const response = await fetch(`{{ url_for("constraints.get_policy_audit_log", policy_id=0) }}`.replace('0', policyId));
+            const result = await response.json();
+            
+            if (result.success) {
+                // Display audit log in a modal or new window
+                let auditHtml = '<h3>Audit Log for Policy</h3><table border="1"><tr><th>Date</th><th>Type</th><th>Field</th><th>Old</th><th>New</th><th>By</th><th>Reason</th></tr>';
+                result.audit_entries.forEach(entry => {
+                    auditHtml += `<tr>
+                        <td>${entry.created_at}</td>
+                        <td>${entry.change_type}</td>
+                        <td>${entry.field_name || '-'}</td>
+                        <td>${entry.old_value || '-'}</td>
+                        <td>${entry.new_value || '-'}</td>
+                        <td>${entry.changed_by}</td>
+                        <td>${entry.change_reason || '-'}</td>
+                    </tr>`;
+                });
+                auditHtml += '</table>';
+                
+                const newWindow = window.open('', '_blank', 'width=800,height=600');
+                newWindow.document.write(auditHtml);
+            } else {
+                alert('Error loading audit log: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error loading audit log: ' + error.message);
+        }
+    });
+});
+
+// Real-time validation
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('input', function() {
+        // Clear previous validation state
+        const feedback = document.getElementById(this.id + '_feedback');
+        if (feedback) {
+            feedback.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}Automatic Splitting System - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.splitting-system {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.form-group select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.test-results {
+    margin-top: 2rem;
+    display: none;
+}
+
+.result-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.result-section.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.result-section.info {
+    background: #d1ecf1;
+    border: 1px solid #b6d4db;
+}
+
+.result-section.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+}
+
+.result-section.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.shift-list {
+    margin-top: 1rem;
+}
+
+.shift-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.shift-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.shift-time {
+    font-weight: 600;
+}
+
+.shift-duration {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.split-badge {
+    background: #17a2b8;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rejection-badge {
+    background: #dc3545;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.valid-badge {
+    background: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.split-details {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.split-shift {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.split-shift:last-child {
+    border-bottom: none;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.splits-log {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.split-log-item {
+    padding: 1rem;
+    border-left: 4px solid #17a2b8;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.split-header-log {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.split-time {
+    font-weight: 600;
+    color: #333;
+}
+
+.split-count {
+    color: #17a2b8;
+    font-weight: 600;
+}
+
+.split-details-log {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.help-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #b6d4db;
+}
+
+.processing-flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 1rem;
+    margin: 2rem 0;
+    align-items: center;
+}
+
+.flow-step {
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.flow-arrow {
+    font-size: 1.5rem;
+    color: #007bff;
+}
+
+.flow-step.original {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.flow-step.split {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.flow-step.final {
+    background: #d4edda;
+    color: #155724;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Automatic Splitting System{% endblock %}
+{% block header_subtitle %}Test and monitor automatic splitting of overly long shifts (Issue #28){% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+    <strong>Issue #28:</strong> This system automatically splits time blocks exceeding 3 hours into compliant chunks with proper breaks to prevent overscheduling. All splits are logged for review.
+</div>
+
+<div class="splitting-system">
+    <h2>Test Complete Processing System</h2>
+    <p>This tests both automatic splitting (Issue #28) and rejection (Issue #27) together.</p>
+    
+    <div class="form-section">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="term_id">Term</label>
+                <select id="term_id" name="term_id" required>
+                    <option value="">Select a term</option>
+                    {% for term in terms %}
+                    <option value="{{ term.term_id }}">{{ term.term_name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">Select term to test processing against its policies</div>
+            </div>
+            <div class="form-group">
+                <button id="runTest" class="btn btn-primary" disabled>Run Complete Processing Test</button>
+                <div class="help-text">Tests 4 shifts: 1 too short (rejected), 1 valid (accepted), 2 too long (split)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="processingFlow" class="processing-flow" style="display: none;">
+        <div class="flow-step original">
+            <strong>Original Proposed</strong><br>
+            <span id="originalCount">0</span> shifts
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step split">
+            <strong>After Splitting</strong><br>
+            <span id="afterSplitCount">0</span> shifts
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step final">
+            <strong>Final Valid</strong><br>
+            <span id="finalCount">0</span> shifts
+        </div>
+    </div>
+    
+    <div id="testResults" class="test-results">
+        <div id="summarySection" class="result-section success">
+            <h3>Processing Summary</h3>
+            <div id="summaryStats" class="stats-grid"></div>
+        </div>
+        
+        <div id="splitSection" class="result-section info">
+            <h3>🔨 Automatic Splits</h3>
+            <div id="splitOperations" class="shift-list"></div>
+        </div>
+        
+        <div id="acceptedSection" class="result-section success">
+            <h3>✅ Final Valid Shifts</h3>
+            <div id="finalValidShifts" class="shift-list"></div>
+        </div>
+        
+        <div id="rejectedSection" class="result-section error">
+            <h3>❌ Rejected Shifts</h3>
+            <div id="rejectedShifts" class="shift-list"></div>
+        </div>
+    </div>
+</div>
+
+<div class="splits-log">
+    <h2>Recent Split Log</h2>
+    <div id="currentStats">
+        <p>Select a term above to load split statistics and recent logs.</p>
+    </div>
+    
+    {% if recent_splits %}
+    <h3>Latest Splits (All Terms)</h3>
+    {% for split in recent_splits %}
+    <div class="split-log-item">
+        <div class="split-header-log">
+            <span class="split-time">{{ split.original_start_time.strftime('%H:%M') }} - {{ split.original_end_time.strftime('%H:%M') }}</span>
+            <span class="split-count">Split into {{ split.split_count }} shifts</span>
+        </div>
+        <div class="split-details-log">
+            <strong>Date:</strong> {{ split.proposed_date.strftime('%Y-%m-%d') }} | 
+            <strong>User:</strong> {{ split.user.name if split.user else 'Unknown' }} | 
+            <strong>Original Duration:</strong> {{ split.original_duration_minutes }} minutes | 
+            <strong>Break Time:</strong> {{ split.break_minutes }} minutes |
+            <strong>Split:</strong> {{ split.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+            <br><strong>Reason:</strong> {{ split.split_reason }}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No recent splits found. Run some tests to see split operations appear here.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTermId = null;
+
+// Enable test button when term is selected
+document.getElementById('term_id').addEventListener('change', async function() {
+    const termId = this.value;
+    currentTermId = termId;
+    
+    document.getElementById('runTest').disabled = !termId;
+    
+    if (termId) {
+        await loadSplitStats(termId);
+    } else {
+        document.getElementById('currentStats').innerHTML = '<p>Select a term above to load split statistics and recent logs.</p>';
+    }
+});
+
+// Run complete processing test
+document.getElementById('runTest').addEventListener('click', async function() {
+    if (!currentTermId) return;
+    
+    this.disabled = true;
+    this.textContent = 'Running Test...';
+    
+    try {
+        const response = await fetch('{{ url_for("constraints.test_complete_processing") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                term_id: parseInt(currentTermId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTestResults(data.result);
+            await loadSplitStats(currentTermId); // Refresh stats
+        } else {
+            alert('Test failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error running test: ' + error.message);
+    } finally {
+        this.disabled = false;
+        this.textContent = 'Run Complete Processing Test';
+    }
+});
+
+function displayTestResults(result) {
+    const testResults = document.getElementById('testResults');
+    const processingFlow = document.getElementById('processingFlow');
+    
+    testResults.style.display = 'block';
+    processingFlow.style.display = 'grid';
+    
+    // Update processing flow
+    document.getElementById('originalCount').textContent = result.processing_summary.original_count;
+    document.getElementById('afterSplitCount').textContent = result.processing_summary.after_split_count;
+    document.getElementById('finalCount').textContent = result.processing_summary.final_accepted_count;
+    
+    // Summary stats
+    document.getElementById('summaryStats').innerHTML = `
+        <div class="stat-item">
+            <div class="stat-number">${result.processing_summary.original_count}</div>
+            <div class="stat-label">Original Proposed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${result.processing_summary.total_split_operations}</div>
+            <div class="stat-label">Split Operations</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${result.processing_summary.splits_created}</div>
+            <div class="stat-label">New Shifts Created</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${result.processing_summary.final_accepted_count}</div>
+            <div class="stat-label">Final Accepted</div>
+        </div>
+    `;
+    
+    // Split operations
+    if (result.split_operations.length > 0) {
+        const splitHtml = result.split_operations.map(op => `
+            <div class="shift-item">
+                <div class="shift-header">
+                    <div>
+                        <span class="shift-time">Original: ${formatShiftTime(op.original_shift)}</span>
+                        <div class="shift-duration">${op.original_duration} minutes</div>
+                    </div>
+                    <span class="split-badge">Split into ${op.split_count}</span>
+                </div>
+                <div class="split-details">
+                    <strong>Split shifts:</strong>
+                    ${op.split_shifts.map((shift, i) => `
+                        <div class="split-shift">
+                            <span>Shift ${i + 1}: ${shift.start_time} - ${shift.end_time}</span>
+                            <span>${Math.round(shift.duration_minutes)} minutes</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('splitOperations').innerHTML = splitHtml;
+    } else {
+        document.getElementById('splitOperations').innerHTML = '<p>No splits were needed for this test.</p>';
+    }
+    
+    // Final valid shifts
+    const validHtml = result.final_valid_shifts.map(shift => `
+        <div class="shift-item">
+            <div class="shift-header">
+                <div>
+                    <span class="shift-time">${shift.start_time} - ${shift.end_time}</span>
+                    <div class="shift-duration">${calculateDuration(shift.start_time, shift.end_time)} minutes</div>
+                </div>
+                <span class="valid-badge">Valid</span>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('finalValidShifts').innerHTML = validHtml;
+    
+    // Rejected shifts
+    if (result.rejected_shifts.length > 0) {
+        const rejectedHtml = result.rejected_shifts.map(shift => `
+            <div class="shift-item">
+                <div class="shift-header">
+                    <div>
+                        <span class="shift-time">${shift.start_time} - ${shift.end_time}</span>
+                        <div class="shift-duration">${calculateDuration(shift.start_time, shift.end_time)} minutes</div>
+                        <div style="color: #dc3545; font-size: 0.9rem; font-style: italic;">${shift.rejection_reason}</div>
+                    </div>
+                    <span class="rejection-badge">Rejected</span>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('rejectedShifts').innerHTML = rejectedHtml;
+    } else {
+        document.getElementById('rejectedShifts').innerHTML = '<p>No shifts were rejected in this test.</p>';
+    }
+}
+
+async function loadSplitStats(termId) {
+    try {
+        const response = await fetch(`{{ url_for('constraints.get_split_stats', term_id=0) }}`.replace('0', termId));
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySplitStats(data.stats);
+        } else {
+            document.getElementById('currentStats').innerHTML = `<p style="color: red;">Error loading stats: ${data.error}</p>`;
+        }
+    } catch (error) {
+        document.getElementById('currentStats').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+    }
+}
+
+function displaySplitStats(stats) {
+    if (stats.total_splits === 0) {
+        document.getElementById('currentStats').innerHTML = '<p>No splits recorded for this term yet.</p>';
+        return;
+    }
+    
+    document.getElementById('currentStats').innerHTML = `
+        <h3>Split Statistics for Selected Term</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">${stats.total_splits}</div>
+                <div class="stat-label">Total Splits</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${Math.round(stats.avg_split_count * 10) / 10}</div>
+                <div class="stat-label">Avg Split Count</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${Math.round(stats.avg_original_duration)}</div>
+                <div class="stat-label">Avg Original (min)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${stats.longest_original}</div>
+                <div class="stat-label">Longest Split</div>
+            </div>
+        </div>
+    `;
+}
+
+function calculateDuration(startTime, endTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    
+    // Handle overnight shifts
+    if (duration < 0) {
+        duration += 24 * 60;
+    }
+    
+    return duration;
+}
+
+function formatShiftTime(shift) {
+    return `${shift.start_time} - ${shift.end_time}`;
+}
+</script>
+{% endblock %}

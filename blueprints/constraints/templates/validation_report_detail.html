@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Validation Report {{ report.report_id }} - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.report-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.report-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.meta-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.meta-label {
+    font-size: 12px;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.meta-value {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.export-actions {
+    margin: 20px 0;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.export-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.export-btn.pdf {
+    background: #dc3545;
+    color: white;
+}
+
+.export-btn.csv {
+    background: #28a745;
+    color: white;
+}
+
+.export-btn.back {
+    background: #6c757d;
+    color: white;
+}
+
+.violations-section {
+    margin-bottom: 40px;
+}
+
+.violation-type-header {
+    background: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 15px 20px;
+    margin: 20px 0 10px 0;
+    border-radius: 0 6px 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.violation-count-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.violations-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.violations-table th {
+    background: #007bff;
+    color: white;
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.violations-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
+}
+
+.violations-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.severity-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.severity-critical { background: #dc3545; color: white; }
+.severity-error { background: #fd7e14; color: white; }
+.severity-warning { background: #ffc107; color: #333; }
+
+.user-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.user-link:hover {
+    text-decoration: underline;
+}
+
+.shift-link {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 11px;
+    transition: background 0.3s ease;
+}
+
+.shift-link:hover {
+    background: #007bff;
+    color: white;
+}
+
+.duration-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.duration-current {
+    font-weight: bold;
+}
+
+.duration-expected {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.no-violations {
+    text-align: center;
+    padding: 60px 20px;
+    color: #28a745;
+    font-size: 18px;
+}
+
+.no-violations i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.summary-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+    margin-bottom: 30px;
+}
+
+.resolved-indicator {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.resolved-yes { background: #d4edda; color: #155724; }
+.resolved-no { background: #f8d7da; color: #721c24; }
+
+.violation-message {
+    max-width: 300px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Validation Report #{{ report.report_id }}{% endblock %}
+{% block header_subtitle %}Generated {{ report.generated_at.strftime('%B %d, %Y at %H:%M') }}{% endblock %}
+
+{% block content %}
+<div class="report-header">
+    <h2>Shift Duration Validation Report</h2>
+    <p>{{ report.report_summary }}</p>
+    
+    <div class="report-meta">
+        <div class="meta-item">
+            <div class="meta-label">Report ID</div>
+            <div class="meta-value">#{{ report.report_id }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Term</div>
+            <div class="meta-value">{{ report.term.name if report.term else 'Unknown' }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Generated By</div>
+            <div class="meta-value">{{ report.generated_by_user.name if report.generated_by_user else 'Unknown' }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Shifts Analyzed</div>
+            <div class="meta-value">{{ report.total_shifts_analyzed }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Violations Found</div>
+            <div class="meta-value">{{ report.total_violations_found }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Report Status</div>
+            <div class="meta-value">{{ report.report_status.title() }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="export-actions">
+    <a href="{{ url_for('constraints.export_validation_report_pdf', report_id=report.report_id) }}" 
+       class="export-btn pdf">📄 Export PDF</a>
+    <a href="{{ url_for('constraints.export_validation_report_csv', report_id=report.report_id) }}" 
+       class="export-btn csv">📊 Export CSV</a>
+    <a href="{{ url_for('constraints.validation_reports') }}" 
+       class="export-btn back">← Back to Reports</a>
+</div>
+
+{% if report.violations_by_severity %}
+<div class="summary-box">
+    <h3>Violations Summary</h3>
+    <p><strong>Severity Breakdown:</strong></p>
+    <ul>
+        {% for severity, count in report.violations_by_severity.items() %}
+        <li>{{ severity.title() }}: {{ count }} violation{{ 's' if count != 1 else '' }}</li>
+        {% endfor %}
+    </ul>
+    
+    {% if report.violations_by_type %}
+    <p><strong>Type Breakdown:</strong></p>
+    <ul>
+        {% for vtype, count in report.violations_by_type.items() %}
+        <li>{{ vtype.replace('_', ' ').title() }}: {{ count }} violation{{ 's' if count != 1 else '' }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="violations-section">
+    {% if violations_by_type %}
+        {% for violation_type, violations_list in violations_by_type.items() %}
+        <div class="violation-type-header">
+            <h3>{{ violation_type.replace('_', ' ').title() }}</h3>
+            <span class="violation-count-badge">{{ violations_list|length }} violation{{ 's' if violations_list|length != 1 else '' }}</span>
+        </div>
+        
+        <table class="violations-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Date & Time</th>
+                    <th>Duration</th>
+                    <th>Severity</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for violation in violations_list %}
+                <tr>
+                    <td>
+                        <a href="#" class="user-link">{{ violation.user_name }}</a>
+                    </td>
+                    <td>
+                        <div>{{ violation.date }}</div>
+                        <div style="font-size: 12px; color: #6c757d;">
+                            {{ violation.start_time }} - {{ violation.end_time }}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="duration-info">
+                            <span class="duration-current">{{ violation.current_duration }} min</span>
+                            <span class="duration-expected">Expected: {{ violation.expected_min }}-{{ violation.expected_max }} min</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="severity-badge severity-{{ violation.severity }}">{{ violation.severity }}</span>
+                    </td>
+                    <td>
+                        <div class="violation-message">{{ violation.message }}</div>
+                    </td>
+                    <td>
+                        <span class="resolved-indicator resolved-{{ 'yes' if violation.is_resolved else 'no' }}">
+                            {{ 'Resolved' if violation.is_resolved else 'Open' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ violation.ui_link }}" class="shift-link">View Shift</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    {% else %}
+        <div class="no-violations">
+            <i>✅</i>
+            <h3>No Violations Found</h3>
+            <p>All {{ report.total_shifts_analyzed }} shifts analyzed meet duration requirements.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #6c757d;">
+    <p><strong>Report Details:</strong></p>
+    <ul>
+        <li>Generated on {{ report.generated_at.strftime('%Y-%m-%d at %H:%M:%S') }}</li>
+        <li>Total shifts analyzed: {{ report.total_shifts_analyzed }}</li>
+        <li>PDF Export: {{ 'Available' if report.pdf_generated else 'Not generated' }}</li>
+        <li>CSV Export: {{ 'Available' if report.csv_generated else 'Not generated' }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.validation_reports') }}">← Back to Validation Reports</a>{% endblock %}

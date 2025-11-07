@@ -176,7 +176,7 @@
 
                 <!-- Current Coverage Requirements (outside the add coverage form so delete buttons submit their own forms correctly) -->
                 {% if staffing_needs %}
-                <table class="coverage-table">
+                <table class="coverage-table" id="coverageTable">
                     <thead>
                         <tr>
                             <th>Day</th>
@@ -188,36 +188,64 @@
                     </thead>
                     <tbody>
                         {% for need in staffing_needs %}
-                        <tr>
+                        <tr data-need-id="{{ need.need_id }}">
                             <td>
-                                <span class="day-badge">
-                                    {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                                    'Saturday', 'Sunday'] %}
-                                    {{ day_names[need.day_of_week] }}
-                                </span>
+                                {% set day_names =
+                                ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+                                <span class="day-badge view-mode">{{ day_names[need.day_of_week] }}</span>
+                                <select class="edit-mode" name="day_of_week" style="display:none;">
+                                    {% for i in range(7) %}
+                                    <option value="{{ i }}" {% if i==need.day_of_week %}selected{% endif %}>{{
+                                        day_names[i] }}</option>
+                                    {% endfor %}
+                                </select>
                             </td>
                             <td>
-                                <span class="time-range">
-                                    {{ need.start_time.strftime('%H:%M') }} - {{ need.end_time.strftime('%H:%M') }}
-                                </span>
+                                <span class="time-range view-mode">{{ need.start_time.strftime('%H:%M') }} - {{
+                                    need.end_time.strftime('%H:%M') }}</span>
+                                <div class="edit-mode" style="display:none;">
+                                    <input type="time" name="start_time" value="{{ need.start_time.strftime('%H:%M') }}"
+                                        required>
+                                    <input type="time" name="end_time" value="{{ need.end_time.strftime('%H:%M') }}"
+                                        required>
+                                </div>
                             </td>
                             <td>
-                                <span class="role-badge {{ need.role_required }}">
-                                    {{ need.role_required.title() }}
-                                </span>
+                                <span class="role-badge view-mode {{ need.role_required }}">{{
+                                    need.role_required.title() }}</span>
+                                <select class="edit-mode" name="role_required" style="display:none;">
+                                    {% for r in ['student','supervisor','manager'] %}
+                                    <option value="{{ r }}" {% if r==need.role_required %}selected{% endif %}>{{
+                                        r.title() }}</option>
+                                    {% endfor %}
+                                </select>
                             </td>
                             <td>
-                                <span class="count-badge">{{ need.required_count }}</span>
+                                <span class="count-badge view-mode">{{ need.required_count }}</span>
+                                <input type="number" class="edit-mode" name="required_count" min="1" max="10"
+                                    value="{{ need.required_count }}" style="display:none;">
                             </td>
-                            <td>
-                                <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="action" value="delete_coverage">
-                                    <input type="hidden" name="need_id" value="{{ need.need_id }}">
-                                    <button type="submit" class="btn-delete"
-                                        onclick="return confirm('Are you sure you want to delete this coverage requirement?')">
-                                        🗑️ Delete
-                                    </button>
-                                </form>
+                            <td class="actions-cell">
+                                <div class="view-mode">
+                                    <button type="button" class="action-button small row-btn" onclick="enterEdit(this)"
+                                        title="Edit">✏️ Edit</button>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="action" value="delete_coverage">
+                                        <input type="hidden" name="need_id" value="{{ need.need_id }}">
+                                        <button type="submit" class="btn-delete row-btn action-button" title="Delete"
+                                            onclick="return confirm('Delete this coverage requirement?')">🗑️
+                                            Delete</button>
+                                    </form>
+                                </div>
+                                <div class="edit-mode" style="display:none; gap:0.4rem;">
+                                    <button type="button" class="btn-primary small row-btn" onclick="saveEdit(this)">💾
+                                        Save</button>
+                                    <button type="button" class="btn-secondary small row-btn"
+                                        onclick="cancelEdit(this)">↩️
+                                        Cancel</button>
+                                    <div class="inline-errors"
+                                        style="color:#b30000; font-size:0.75rem; margin-top:0.25rem;"></div>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -334,6 +362,113 @@
 </div>
 
 <script src="{{ url_for('staffing.static', filename='staffing.js') }}"></script>
+<script>
+    // Inline edit logic (client-side undo/redo stacks kept in memory)
+    const undoStack = [];
+    const redoStack = [];
+
+    function enterEdit(btn) {
+        const row = btn.closest('tr');
+        row.classList.add('editing-row');
+        row.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+        row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'flex');
+    }
+    function cancelEdit(btn) {
+        const row = btn.closest('tr');
+        row.classList.remove('editing-row');
+        row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
+        row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
+    }
+    function saveEdit(btn) {
+        const row = btn.closest('tr');
+        const needId = row.dataset.needId;
+        const daySelect = row.querySelector('select[name="day_of_week"]');
+        const startInput = row.querySelector('input[name="start_time"]');
+        const endInput = row.querySelector('input[name="end_time"]');
+        const roleSelect = row.querySelector('select[name="role_required"]');
+        const countInput = row.querySelector('input[name="required_count"]');
+        const errorBox = row.querySelector('.inline-errors');
+        if (errorBox) { errorBox.textContent = ''; }
+        const payload = {
+            action: 'update_coverage',
+            need_id: needId,
+            day_of_week: daySelect.value,
+            start_time: startInput.value,
+            end_time: endInput.value,
+            role_required: roleSelect.value,
+            required_count: countInput.value,
+            fetch: '1'
+        };
+        // Capture previous state for undo
+        const prev = {
+            need_id: needId,
+            day_of_week: row.querySelector('.day-badge').textContent.trim(),
+            time_window: row.querySelector('.time-range').textContent.trim(),
+            role_required: row.querySelector('.role-badge').textContent.trim().toLowerCase(),
+            required_count: row.querySelector('.count-badge').textContent.trim()
+        };
+        fetch(window.location.pathname + window.location.search, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(payload)
+        }).then(async r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) {
+                const txt = await r.text();
+                throw new Error('Non-JSON response (status ' + r.status + '): ' + txt.slice(0, 120));
+            }
+            let data = await r.json();
+            if (!data.ok) {
+                if (errorBox) {
+                    errorBox.textContent = (data.errors || []).join(' | ');
+                } else {
+                    alert('Update failed: ' + (data.errors || []).join(', '));
+                }
+                return;
+            }
+            // Push undo state
+            undoStack.push(prev);
+            redoStack.length = 0;
+            // Update view mode values
+            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            row.querySelector('.day-badge').textContent = dayNames[data.need.day_of_week];
+            row.querySelector('.time-range').textContent = data.need.start_time + ' - ' + data.need.end_time;
+            const roleBadge = row.querySelector('.role-badge');
+            roleBadge.className = 'role-badge ' + data.need.role_required;
+            roleBadge.textContent = data.need.role_required.charAt(0).toUpperCase() + data.need.role_required.slice(1);
+            row.querySelector('.count-badge').textContent = data.need.required_count;
+            cancelEdit(btn); // back to view mode
+            // Full page reload so gap warnings + aggregate stats refresh automatically
+            setTimeout(() => { window.location.reload(); }, 50);
+        }).catch(err => {
+            if (errorBox) {
+                errorBox.textContent = 'Save error: ' + err.message;
+            } else {
+                alert('Error saving change: ' + err);
+            }
+        });
+    }
+    // Optional undo/redo buttons (could be placed globally)
+    function undoChange() {
+        if (!undoStack.length) { alert('Nothing to undo'); return; }
+        const last = undoStack.pop();
+        redoStack.push(last); // For redo implementation we’d need original state; simplified
+        // Parse time window back to start/end
+        const [start, end] = last.time_window.split(' - ');
+        const dayIndex = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].indexOf(last.day_of_week);
+        const payload = {
+            action: 'update_coverage',
+            need_id: last.need_id,
+            day_of_week: dayIndex,
+            start_time: start,
+            end_time: end,
+            role_required: last.role_required.toLowerCase(),
+            required_count: last.required_count
+        };
+        fetch(window.location.pathname + window.location.search, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(payload) })
+            .then(() => window.location.reload());
+    }
+</script>
 {% endblock %}
 
 {% block footer %}

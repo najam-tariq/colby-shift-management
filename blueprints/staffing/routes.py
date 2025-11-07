@@ -11,6 +11,11 @@ def index():
     print(f"DEBUG: Request method: {request.method}", flush=True)
     if request.method == 'POST':
         print("DEBUG: POST request received!", flush=True)
+    # Module sanity: confirm latest code loaded
+    try:
+        _sentinel_version = 'update_coverage_v2_json_debug'
+    except Exception:
+        pass
         
     # Get selected term from query parameter or default to first available
     selected_term_id = request.args.get('term_id', type=int)
@@ -363,6 +368,115 @@ def index():
                 flash(f'Error clearing coverage requirements: {str(e)}', 'error')
                 db.session.rollback()
         
+        elif action == 'update_coverage':
+            # Inline update of existing coverage requirement (reuse validation logic)
+            try:
+                print(f"DEBUG:update_coverage fetch flag={request.form.get('fetch')} raw_form={dict(request.form)}", flush=True)
+                need_id = int(request.form.get('need_id'))
+                need = StaffingNeeds.query.get(need_id)
+                if not need:
+                    flash('Coverage requirement not found.', 'error')
+                    # Support fetch-based inline updates: return JSON when requested
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': ['Not found']}), 404
+                    return redirect(url_for('staffing.index'))
+
+                # Extract new values
+                new_day = int(request.form.get('day_of_week'))
+                new_start = datetime.strptime(request.form.get('start_time'), '%H:%M').time()
+                new_end = datetime.strptime(request.form.get('end_time'), '%H:%M').time()
+                new_role = request.form.get('role_required')
+                new_count = int(request.form.get('required_count'))
+
+                term = need.term
+                if term.locked:
+                    flash('Term is locked; cannot modify coverage.', 'error')
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': ['Term locked']}), 400
+                    return redirect(url_for('staffing.index', term_id=term.term_id))
+
+                # Basic validations (reuse existing approach)
+                errors = []
+                # Duration
+                if new_start >= new_end:
+                    errors.append('Start time must be before end time.')
+                # Headcount vs active users
+                active_role_users = User.query.filter_by(role=new_role, is_active=True).count()
+                if active_role_users and new_count > active_role_users:
+                    errors.append(f'Required count ({new_count}) exceeds active {new_role} count ({active_role_users}).')
+                # Overlap check (excluding current need)
+                overlap = StaffingNeeds.query.filter(
+                    StaffingNeeds.term_id == term.term_id,
+                    StaffingNeeds.need_id != need.need_id,
+                    StaffingNeeds.day_of_week == new_day,
+                    StaffingNeeds.role_required == new_role,
+                    (
+                        ((StaffingNeeds.start_time <= new_start) & (StaffingNeeds.end_time > new_start)) |
+                        ((StaffingNeeds.start_time < new_end) & (StaffingNeeds.end_time >= new_end)) |
+                        ((StaffingNeeds.start_time >= new_start) & (StaffingNeeds.end_time <= new_end))
+                    )
+                ).first()
+                if overlap:
+                    errors.append('Updated time window overlaps an existing requirement for this role.')
+
+                if errors:
+                    for e in errors:
+                        flash(e, 'error')
+                    if request.form.get('fetch') == '1':
+                        return jsonify({'ok': False, 'errors': errors}), 400
+                    return redirect(url_for('staffing.index', term_id=term.term_id))
+
+                # Apply update
+                need.day_of_week = new_day
+                need.start_time = new_start
+                need.end_time = new_end
+                need.role_required = new_role
+                need.required_count = new_count
+                db.session.commit()
+                flash('Coverage requirement updated.', 'success')
+                if request.form.get('fetch') == '1':
+                    print(f"DEBUG:update_coverage returning JSON for need_id={need.need_id}", flush=True)
+                    return jsonify({
+                        'ok': True,
+                        'need': {
+                            'need_id': need.need_id,
+                            'day_of_week': need.day_of_week,
+                            'start_time': need.start_time.strftime('%H:%M'),
+                            'end_time': need.end_time.strftime('%H:%M'),
+                            'role_required': need.role_required,
+                            'required_count': need.required_count
+                        }
+                    })
+            except Exception as e:
+                flash(f'Error updating coverage requirement: {str(e)}', 'error')
+                db.session.rollback()
+                if request.form.get('fetch') == '1':
+                    print(f"DEBUG:update_coverage exception: {e}", flush=True)
+                    return jsonify({'ok': False, 'errors': [str(e)]}), 500
+
+        # If this was a fetch-based update_coverage but we somehow did not return JSON above, provide a fallback to avoid HTML redirect.
+        if action == 'update_coverage' and request.form.get('fetch') == '1':
+            try:
+                need_id = int(request.form.get('need_id'))
+                need = StaffingNeeds.query.get(need_id)
+                if need:
+                    print("DEBUG: Fallback JSON response triggered (unexpected)", flush=True)
+                    return jsonify({
+                        'ok': True,
+                        'need': {
+                            'need_id': need.need_id,
+                            'day_of_week': need.day_of_week,
+                            'start_time': need.start_time.strftime('%H:%M'),
+                            'end_time': need.end_time.strftime('%H:%M'),
+                            'role_required': need.role_required,
+                            'required_count': need.required_count
+                        },
+                        'fallback': True
+                    })
+                else:
+                    return jsonify({'ok': False, 'errors': ['Need missing in fallback'] }), 500
+            except Exception as e:
+                return jsonify({'ok': False, 'errors': [f'Fallback error: {e}'] }), 500
         return redirect(url_for('staffing.index'))
     
     # Helper: Analyze staffing coverage gaps for selected term

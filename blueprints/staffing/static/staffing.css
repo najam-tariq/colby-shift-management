@@ -231,6 +231,53 @@ body {
     vertical-align: middle;
 }
 
+/* Inline editing unified styling */
+.row-btn {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.75rem;
+    min-height: 42px;
+    line-height: 1;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    font-weight:600;
+}
+.row-btn.btn-primary { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; border:none; box-shadow:0 2px 6px rgba(102,126,234,0.25); }
+.row-btn.btn-secondary { background:#f8f9fb; border:2px solid #e2e8f0; color:#374151; }
+.row-btn.btn-secondary:hover { background:#eef2ff; border-color:#667eea; }
+.row-btn.btn-delete { background:#dc3545; color:#fff; border:none; }
+.row-btn.btn-delete:hover { background:#c82333; }
+.row-btn:hover { transform:translateY(-2px); }
+.row-btn:active { transform:translateY(0); }
+
+/* Inline error */
+.inline-errors { min-height:16px; font-size:0.65rem; font-weight:600; letter-spacing:.4px; color:#b30000; }
+
+/* Edit-mode field styling (covers elements that have the class directly AND descendants) */
+.edit-mode,
+.edit-mode select,
+.edit-mode input,
+select.edit-mode,
+input.edit-mode {
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.edit-mode select:focus,
+.edit-mode input:focus,
+select.edit-mode:focus,
+input.edit-mode:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+}
 .coverage-table tbody tr:hover {
     background: #f8f9fa;
     transition: background-color 0.2s ease;

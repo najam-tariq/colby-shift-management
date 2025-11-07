@@ -13,18 +13,28 @@
 
 {% block content %}
 {% if term %}
-<div class="preview-header">
-    <h2>{{ term.name }}</h2>
-    <p>{{ term.start_date }} to {{ term.end_date }}</p>
+<div class="preview-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h2>{{ term.name }}</h2>
+        <p>{{ term.start_date }} to {{ term.end_date }}</p>
+    </div>
+    {% if current_user.role != 'student' %}
+    <div>
+        <a href="{{ url_for('scheduler.edit_schedule', term_id=term.term_id) }}" 
+           style="display: inline-block; background: #667eea; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 500;">
+            ✏️ Edit Schedule
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 {% if policy %}
 <div class="policy-info">
     <h3>⚙️ Active Constraints:</h3>
     <ul>
-        <li>Shift length: {{ policy.min_shift_length }} - {{ policy.max_shift_length }} hours</li>
-        <li>Break length: {{ policy.min_break_length }} - {{ policy.max_break_length }} hours</li>
-        <li>Undesirable times: Before {{ policy.undesireable_start }}:00 or after {{ policy.undesireable_end }}:00</li>
+        <li>Shift length: {{ policy.min_shift_length }} - {{ policy.max_shift_length }} minutes ({{ (policy.min_shift_length / 60)|round(1) }} - {{ (policy.max_shift_length / 60)|round(1) }} hours)</li>
+        <li>Break length: {{ policy.min_break_length }} - {{ policy.max_break_length }} minutes ({{ (policy.min_break_length / 60)|round(1) }} - {{ (policy.max_break_length / 60)|round(1) }} hours)</li>
+        <li>Undesirable times: Before {{ '%02d:%02d'|format(policy.undesireable_start // 100, policy.undesireable_start % 100) }} or after {{ '%02d:%02d'|format(policy.undesireable_end // 100, policy.undesireable_end % 100) }}</li>
     </ul>
 </div>
 {% endif %}

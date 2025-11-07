@@ -40,6 +40,10 @@ def availability():
                 stream = io.StringIO(file.stream.read().decode('UTF8'))
                 reader = csv.DictReader(stream)
 
+                added_count = 0
+                updated_count = 0
+                skipped_count = 0
+
                 for row in reader:
                     user = User.query.filter_by(name=row['name']).first()
                     if not user:
@@ -51,17 +55,60 @@ def availability():
                     start_time = datetime.strptime(row['start_time'], '%H:%M').time()
                     end_time = datetime.strptime(row['end_time'], '%H:%M').time()
 
-                    new_avail = Availability(
+                    # Check if this exact availability record already exists
+                    existing = Availability.query.filter_by(
                         user_id=user.user_id,
                         term_id=active_term.term_id,
                         day_of_week=day,
                         start_time=start_time,
                         end_time=end_time
-                    )
-                    db.session.add(new_avail)
+                    ).first()
+
+                    if existing:
+                        # Exact duplicate found - skip it
+                        skipped_count += 1
+                        continue
+
+                    # Check if there's an overlapping availability for this user/term/day
+                    overlapping = Availability.query.filter_by(
+                        user_id=user.user_id,
+                        term_id=active_term.term_id,
+                        day_of_week=day
+                    ).filter(
+                        ((Availability.start_time <= start_time) & (Availability.end_time > start_time)) |
+                        ((Availability.start_time < end_time) & (Availability.end_time >= end_time)) |
+                        ((Availability.start_time >= start_time) & (Availability.end_time <= end_time))
+                    ).first()
+
+                    if overlapping:
+                        # Update the existing overlapping record with new times
+                        overlapping.start_time = start_time
+                        overlapping.end_time = end_time
+                        updated_count += 1
+                    else:
+                        # No duplicate or overlap - add new record
+                        new_avail = Availability(
+                            user_id=user.user_id,
+                            term_id=active_term.term_id,
+                            day_of_week=day,
+                            start_time=start_time,
+                            end_time=end_time
+                        )
+                        db.session.add(new_avail)
+                        added_count += 1
 
                 db.session.commit()
-                flash('CSV data uploaded successfully!', 'success')
+                
+                # Provide detailed feedback
+                message_parts = []
+                if added_count > 0:
+                    message_parts.append(f'{added_count} new records added')
+                if updated_count > 0:
+                    message_parts.append(f'{updated_count} records updated')
+                if skipped_count > 0:
+                    message_parts.append(f'{skipped_count} duplicates skipped')
+                
+                flash(f"CSV upload complete: {', '.join(message_parts)}!", 'success')
 
             except Exception as e:
                 db.session.rollback()

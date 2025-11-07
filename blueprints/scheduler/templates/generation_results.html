@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Generation Results - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('scheduler.static', filename='scheduler.css') }}">
+{% endblock %}
+
+{% block header_title %}Schedule Generation Results{% endblock %}
+{% block header_subtitle %}Review generated shifts and statistics{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="results-container">
+        <!-- Summary Cards -->
+        <div class="results-summary">
+            <div class="summary-card summary-success">
+                <div class="summary-icon">✓</div>
+                <div class="summary-content">
+                    <div class="summary-value">{{ total_shifts }}</div>
+                    <div class="summary-label">Shifts Generated</div>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-icon">👥</div>
+                <div class="summary-content">
+                    <div class="summary-value">{{ unique_students }}</div>
+                    <div class="summary-label">Students Utilized</div>
+                </div>
+            </div>
+            
+            <div class="summary-card {% if violations|length > 0 %}summary-warning{% endif %}">
+                <div class="summary-icon">{% if violations|length > 0 %}⚠{% else %}✓{% endif %}</div>
+                <div class="summary-content">
+                    <div class="summary-value">{{ violations|length }}</div>
+                    <div class="summary-label">Violations Detected</div>
+                </div>
+            </div>
+            
+            <div class="summary-card {% if gap_analysis.total_gaps_detected > 0 %}summary-warning{% endif %}">
+                <div class="summary-icon">{% if gap_analysis.total_gaps_detected > 0 %}⚠{% else %}✓{% endif %}</div>
+                <div class="summary-content">
+                    <div class="summary-value">{{ gap_analysis.total_gaps_detected }}</div>
+                    <div class="summary-label">Gaps Detected</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Range Info -->
+        <div class="info-card">
+            <h3>📅 Generation Details</h3>
+            <div class="info-details">
+                <div class="info-item">
+                    <span class="info-label">Term:</span>
+                    <span class="info-value">{{ term.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Date Range:</span>
+                    <span class="info-value">{{ start_date.strftime('%B %d, %Y') }} - {{ end_date.strftime('%B %d, %Y') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Duration:</span>
+                    <span class="info-value">{{ (end_date - start_date).days + 1 }} days</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Violations Section (if any) -->
+        {% if violations|length > 0 %}
+        <div class="violations-section">
+            <h3>⚠ Policy Violations</h3>
+            <div class="alert alert-warning">
+                <p>The following shifts violate policy constraints. Please review and fix before publishing.</p>
+            </div>
+            <table class="violations-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Details</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for violation in violations %}
+                    <tr>
+                        <td>{{ violation.shift.user.name }}</td>
+                        <td>{{ violation.shift.date.strftime('%m/%d') }}</td>
+                        <td>{{ violation.shift.start_time.strftime('%I:%M %p') }} - {{ violation.shift.end_time.strftime('%I:%M %p') }}</td>
+                        <td>{{ violation.error }}</td>
+                        <td>
+                            <a href="{{ url_for('scheduler.edit_shift', shift_id=violation.shift.shift_id) }}" class="btn-small">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Student Distribution -->
+        <div class="student-distribution-section">
+            <h3>👥 Student Shift Distribution</h3>
+            <table class="distribution-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Shifts</th>
+                        <th>Total Hours</th>
+                        <th>Avg Hours/Shift</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_id, data in shifts_by_student.items() %}
+                    <tr>
+                        <td>{{ data.student.name }}</td>
+                        <td>{{ data.shifts|length }}</td>
+                        <td>{{ '%.1f'|format(data.total_hours) }}</td>
+                        <td>{{ '%.1f'|format(data.total_hours / data.shifts|length) }}</td>
+                        <td>
+                            <a href="{{ url_for('outputs.student_view', user_id=user_id) }}" class="btn-small">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Gap Analysis (if any) -->
+        {% if gap_analysis.total_gaps_detected > 0 %}
+        <div class="gaps-section">
+            <h3>🔍 Gap Analysis</h3>
+            <div class="gap-summary">
+                <p><strong>{{ gap_analysis.total_gaps_detected }}</strong> gaps detected that may require attention.</p>
+                {% if gap_analysis.merge_recommendations|length > 0 %}
+                <p><strong>{{ gap_analysis.merge_recommendations|length }}</strong> gaps can be automatically merged.</p>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('constraints.gap_management', term_id=term.term_id) }}" class="btn btn-secondary">
+                View Gap Management →
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{{ url_for('outputs.preview', term_id=term.term_id) }}" class="btn btn-primary btn-large">
+                👁 Preview Full Schedule
+            </a>
+            <a href="{{ url_for('scheduler.edit_schedule', term_id=term.term_id) }}" class="btn btn-secondary btn-large">
+                ✏️ Edit Shifts
+            </a>
+            <a href="{{ url_for('scheduler.index', term_id=term.term_id) }}" class="btn btn-outline">
+                ← Back to Scheduler
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<a href="{{ url_for('scheduler.index', term_id=term.term_id) }}">← Back to Scheduler</a>
+{% endblock %}
+

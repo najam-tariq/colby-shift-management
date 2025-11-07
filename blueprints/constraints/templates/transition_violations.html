@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Transition Time Violations - Issue #35{% endblock %}
+{% block title %}Transition Time Violations{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="transition-violations-container">
     <div class="header-section">
         <h1>⏱️ Transition Time Violations Management</h1>
-        <p class="description">Monitor and resolve insufficient break time between consecutive shifts (Issue #35)</p>
+        <p class="description">Monitor and resolve insufficient break time between consecutive shifts</p>
     </div>
 
     <!-- Term Selection -->
@@ -107,7 +111,7 @@
                 </thead>
                 <tbody id="violationsTableBody">
                     <tr>
-                        <td colspan="8" class="text-center text-muted">Select a term and click "Scan for Violations" to detect issues</td>
+                        <td colspan="8" class="text-center text-muted">Select a term and click "Scan for Violations" to detect problems</td>
                     </tr>
                 </tbody>
             </table>

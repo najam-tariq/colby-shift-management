@@ -3,7 +3,7 @@
 {% block title %}Add Undesirable Time Window - Constraints & Equity{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .form-container {
     max-width: 600px;
@@ -128,16 +128,6 @@
 
 {% block content %}
 <div class="form-container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
     <form method="POST">
         <div class="form-group">
             <label for="policy_id">Policy (Term):</label>

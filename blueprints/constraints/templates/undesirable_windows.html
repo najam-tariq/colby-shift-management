@@ -3,7 +3,7 @@
 {% block title %}Undesirable Time Windows - Constraints & Equity{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .undesirable-windows-container {
     max-width: 1200px;
@@ -104,16 +104,6 @@
 
 {% block content %}
 <div class="undesirable-windows-container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
     <div class="add-window-section">
         <h3>Add New Undesirable Time Window</h3>
         <p>Define time periods that should be avoided when scheduling shifts. Higher weights make time periods more undesirable.</p>

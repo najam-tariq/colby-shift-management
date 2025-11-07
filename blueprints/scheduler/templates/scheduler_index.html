@@ -3,22 +3,250 @@
 {% block title %}Schedule Generation - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('scheduler.static', filename='scheduler.css') }}">
 {% endblock %}
 
 {% block header_title %}Schedule Generation{% endblock %}
 {% block header_subtitle %}Generate optimal schedules and make manual adjustments{% endblock %}
 
 {% block content %}
-<div class="dashboard-options">
-    <div class="dashboard-btn secondary">
-        <div class="btn-content">
-            <h3>GitHub Issues #38-39</h3>
-            <p>Generate initial schedule, manual adjustments, regeneration, etc.</p>
+<div class="main-content">
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Main Scheduler Section -->
+        <div class="scheduler-section">
+            <!-- Term Selector Section -->
+            <div class="term-selector-section">
+                <div class="term-header">
+                    <h3>📅 Select Term</h3>
+                    {% if selected_term %}
+                    <span class="term-badge">{{ selected_term.name }}</span>
+                    {% endif %}
+                </div>
+                
+                {% if available_terms|length > 1 %}
+                <form method="GET" action="{{ url_for('scheduler.index') }}" class="term-select-form">
+                    <select name="term_id" onchange="this.form.submit()" class="term-selector">
+                        {% for term in available_terms %}
+                        <option value="{{ term.term_id }}" {% if selected_term and term.term_id == selected_term.term_id %}selected{% endif %}>
+                            {{ term.name }} ({{ term.start_date }} to {{ term.end_date }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
+            </div>
+
+            {% if selected_term %}
+            <!-- Policy Information -->
+            <div class="policy-info-card">
+                <h3>📋 Current Policy Settings</h3>
+                <div class="policy-details">
+                    <div class="policy-item">
+                        <span class="policy-label">Min Shift Length:</span>
+                        <span class="policy-value">{{ policy.min_shift_length }} minutes</span>
+                    </div>
+                    <div class="policy-item">
+                        <span class="policy-label">Max Shift Length:</span>
+                        <span class="policy-value">{{ policy.max_shift_length }} minutes</span>
+                    </div>
+                    <div class="policy-item">
+                        <span class="policy-label">Gap Prevention:</span>
+                        <span class="policy-value">{% if policy.allow_gap_merging %}Enabled{% else %}Disabled{% endif %}</span>
+                    </div>
+                    <div class="policy-item">
+                        <span class="policy-label">Undesirable Hours:</span>
+                        <span class="policy-value">Before {{ '%02d' % (policy.undesireable_start // 100) }}:00 and after {{ '%02d' % (policy.undesireable_end // 100) }}:00</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('constraints.policy_config') }}" class="btn-edit-policy">Edit Policy →</a>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_shifts }}</div>
+                    <div class="stat-label">Total Shifts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ students_with_shifts }}</div>
+                    <div class="stat-label">Students Scheduled</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ week_overview|length }}</div>
+                    <div class="stat-label">Weeks in Term</div>
+                </div>
+                {% if has_staffing_needs %}
+                <div class="stat-card stat-success">
+                    <div class="stat-value">✓</div>
+                    <div class="stat-label">Staffing Needs Set</div>
+                </div>
+                {% else %}
+                <div class="stat-card stat-warning">
+                    <div class="stat-value">!</div>
+                    <div class="stat-label">No Staffing Needs</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Week-by-Week Overview -->
+            <div class="week-overview-section">
+                <h3>📆 Schedule Overview</h3>
+                <div class="week-grid">
+                    {% for week in week_overview %}
+                    <div class="week-card week-{{ week.status }}">
+                        <div class="week-header">
+                            <span class="week-icon">{{ week.icon }}</span>
+                            <span class="week-num">Week {{ week.week_num }}</span>
+                        </div>
+                        <div class="week-dates">
+                            {{ week.week_start.strftime('%b %d') }} - {{ week.week_end.strftime('%b %d') }}
+                        </div>
+                        <div class="week-stats">
+                            <div class="week-stat">
+                                <span class="stat-label">Shifts:</span>
+                                <span class="stat-value">{{ week.shift_count }}</span>
+                            </div>
+                            <div class="week-stat">
+                                <span class="stat-label">Students:</span>
+                                <span class="stat-value">{{ week.student_count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Schedule Generation Form -->
+            <div class="generation-form-section">
+                <h3>🔨 Generate Schedule</h3>
+                
+                {% if not has_staffing_needs %}
+                <div class="alert alert-warning">
+                    <strong>⚠ No Staffing Needs Defined</strong>
+                    <p>Please define staffing requirements in the <a href="{{ url_for('staffing.index', term_id=selected_term.term_id) }}">Staffing</a> section before generating a schedule.</p>
+                </div>
+                {% else %}
+                <form method="POST" action="{{ url_for('scheduler.generate') }}" class="generation-form" onsubmit="return confirmGeneration()">
+                    <input type="hidden" name="term_id" value="{{ selected_term.term_id }}">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start_date">Start Date:</label>
+                            <input type="date" id="start_date" name="start_date" required
+                                   min="{{ selected_term.start_date }}"
+                                   max="{{ selected_term.end_date }}"
+                                   {% if next_unscheduled_week %}
+                                   value="{{ next_unscheduled_week.week_start }}"
+                                   {% else %}
+                                   value="{{ selected_term.start_date }}"
+                                   {% endif %}>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="end_date">End Date:</label>
+                            <input type="date" id="end_date" name="end_date" required
+                                   min="{{ selected_term.start_date }}"
+                                   max="{{ selected_term.end_date }}"
+                                   {% if next_unscheduled_week %}
+                                   value="{{ next_unscheduled_week.week_end }}"
+                                   {% else %}
+                                   value="{{ selected_term.end_date }}"
+                                   {% endif %}>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="overwrite" value="true">
+                            <span>Overwrite existing shifts in this date range</span>
+                        </label>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary btn-large">
+                            🔨 Generate Schedule
+                        </button>
+                        {% if next_unscheduled_week %}
+                        <button type="button" onclick="generateNextWeek()" class="btn btn-secondary">
+                            ⏭ Generate Next Week Only
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-help">
+                        <p><strong>Tip:</strong> The schedule generator will:</p>
+                        <ul>
+                            <li>✓ Respect min/max shift lengths ({{ policy.min_shift_length }}-{{ policy.max_shift_length }} min)</li>
+                            <li>✓ Avoid fragmented gaps smaller than {{ policy.max_gap_threshold }} minutes</li>
+                            <li>✓ Match shifts to student availability</li>
+                            <li>✓ Distribute shifts fairly among students</li>
+                        </ul>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <h3>⚡ Quick Actions</h3>
+                <div class="action-grid">
+                    <a href="{{ url_for('outputs.preview', term_id=selected_term.term_id) }}" class="action-card">
+                        <span class="action-icon">👁</span>
+                        <span class="action-label">Preview Schedule</span>
+                    </a>
+                    <a href="{{ url_for('scheduler.edit_schedule', term_id=selected_term.term_id) }}" class="action-card">
+                        <span class="action-icon">✏️</span>
+                        <span class="action-label">Edit Shifts</span>
+                    </a>
+                    <a href="{{ url_for('constraints.gap_management', term_id=selected_term.term_id) }}" class="action-card">
+                        <span class="action-icon">🔍</span>
+                        <span class="action-label">Detect Gaps</span>
+                    </a>
+                    <a href="{{ url_for('constraints.validation_reports') }}" class="action-card">
+                        <span class="action-icon">📊</span>
+                        <span class="action-label">Validation Report</span>
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <!-- No Term Selected -->
+            <div class="alert alert-warning">
+                <h3>⚠ No Term Found</h3>
+                <p>Please create a term in the <a href="{{ url_for('staffing.index') }}">Staffing</a> section before generating schedules.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+function confirmGeneration() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const overwrite = document.querySelector('input[name="overwrite"]').checked;
+    
+    let message = `Generate schedule from ${startDate} to ${endDate}?`;
+    if (overwrite) {
+        message += '\n\n⚠️ This will overwrite existing shifts in this range!';
+    }
+    
+    return confirm(message);
+}
+
+function generateNextWeek() {
+    {% if next_unscheduled_week %}
+    document.getElementById('start_date').value = '{{ next_unscheduled_week.week_start }}';
+    document.getElementById('end_date').value = '{{ next_unscheduled_week.week_end }}';
+    {% endif %}
+    document.querySelector('.generation-form').submit();
+}
+
+function toggleTermForm() {
+    const form = document.getElementById('create-term-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 {% endblock %}
 
 {% block footer %}<a href="{{ url_for('auth.shiftManagement') }}">← Back to Dashboard</a>{% endblock %}
-

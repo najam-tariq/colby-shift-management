@@ -3,7 +3,7 @@
 {% block title %}Admin Settings - Shift Duration Policies{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .admin-panel {
     max-width: 1200px;
@@ -213,7 +213,7 @@
 {% endblock %}
 
 {% block header_title %}Admin Settings{% endblock %}
-{% block header_subtitle %}Configure shift duration policies and view audit logs (Issue #29){% endblock %}
+{% block header_subtitle %}Configure shift duration policies and view audit logs{% endblock %}
 
 {% block content %}
 <div class="admin-panel">
@@ -222,7 +222,7 @@
         <strong>Default Policy Values:</strong> When no custom policy exists for a term, the system uses these defaults: 
         Shift Length: {{ default_values.min_shift_length }}-{{ default_values.max_shift_length }} minutes, 
         Break Time: {{ default_values.min_break_length }}-{{ default_values.max_break_length }} minutes,
-        Undesirable Window: {{ "%04d"|format(default_values.undesireable_start) }}-{{ "%04d"|format(default_values.undesireable_end) }}
+        Undesirable: Before {{ '%02d:%02d'|format(default_values.undesireable_start // 100, default_values.undesireable_start % 100) }} or After {{ '%02d:%02d'|format(default_values.undesireable_end // 100, default_values.undesireable_end % 100) }}
     </div>
 
     <!-- Policy Configuration Section -->
@@ -338,8 +338,8 @@
                             {{ policy.min_break_length }}-{{ policy.max_break_length }} minutes
                         </div>
                         <div class="policy-detail">
-                            <strong>Undesirable Window</strong>
-                            {{ "%04d"|format(policy.undesireable_start) }}-{{ "%04d"|format(policy.undesireable_end) }}
+                            <strong>Undesirable Times</strong>
+                            Before {{ '%02d:%02d'|format(policy.undesireable_start // 100, policy.undesireable_start % 100) }} or After {{ '%02d:%02d'|format(policy.undesireable_end // 100, policy.undesireable_end % 100) }}
                         </div>
                         <div class="policy-detail">
                             <strong>Last Updated</strong>

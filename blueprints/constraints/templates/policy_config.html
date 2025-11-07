@@ -3,20 +3,20 @@
 {% block title %}Policy Configuration - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .policy-form {
     background: white;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     margin-bottom: 2rem;
 }
 
 .form-section {
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .form-section:last-child {
@@ -25,9 +25,10 @@
 }
 
 .form-section h3 {
-    color: #333;
+    color: #2c3e50;
     margin-bottom: 1rem;
     font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .form-row {
@@ -45,59 +46,85 @@
 .form-group label {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #555;
+    color: #495057;
 }
 
 .form-group input, .form-group select {
     padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
     font-size: 1rem;
+    transition: border-color 0.2s;
 }
 
 .form-group input:focus, .form-group select:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .policies-list {
     background: white;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.policies-list h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
 }
 
 .policy-item {
-    padding: 1rem;
-    border: 1px solid #eee;
-    border-radius: 4px;
+    padding: 1.5rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
     margin-bottom: 1rem;
-    background: #f9f9f9;
+    background: #f8f9fa;
+    transition: border-color 0.3s;
+}
+
+.policy-item:hover {
+    border-color: #667eea;
 }
 
 .policy-item h4 {
     margin: 0 0 0.5rem 0;
-    color: #333;
+    color: #2c3e50;
+    font-weight: 600;
 }
 
 .policy-details {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
     margin-top: 1rem;
+    font-size: 0.95rem;
 }
 
-.btn-group {
-    margin-top: 1rem;
-    gap: 0.5rem;
-    display: flex;
+.policy-details > div {
+    color: #495057;
+}
+
+.policy-details strong {
+    color: #2c3e50;
 }
 
 .help-text {
-    font-size: 0.9rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: #6c757d;
     margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .policy-details {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 {% endblock %}
@@ -130,12 +157,12 @@
                 <div class="form-group">
                     <label for="min_shift_length">Minimum Shift Length (minutes)</label>
                     <input type="number" id="min_shift_length" name="min_shift_length" value="60" min="60" max="180" required>
-                    <div class="help-text">Issue #26: Enforces 1 hour minimum (60 minutes)</div>
+                    <div class="help-text">Enforces 1 hour minimum (60 minutes)</div>
                 </div>
                 <div class="form-group">
                     <label for="max_shift_length">Maximum Shift Length (minutes)</label>
                     <input type="number" id="max_shift_length" name="max_shift_length" value="180" min="60" max="180" required>
-                    <div class="help-text">Issue #26: Enforces 3 hour maximum (180 minutes)</div>
+                    <div class="help-text">Enforces 3 hour maximum (180 minutes)</div>
                 </div>
             </div>
         </div>
@@ -172,7 +199,10 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Create Policy</button>
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Create Policy</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('constraints.index') }}'">Cancel</button>
+        </div>
     </form>
 </div>
 
@@ -185,15 +215,16 @@
             <div class="policy-details">
                 <div><strong>Shift Length:</strong> {{ policy.min_shift_length }}-{{ policy.max_shift_length }} minutes</div>
                 <div><strong>Break Time:</strong> {{ policy.min_break_length }}-{{ policy.max_break_length }} minutes</div>
-                <div><strong>Undesirable Window:</strong> {{ "%04d"|format(policy.undesireable_start) }}-{{ "%04d"|format(policy.undesireable_end) }}</div>
+                <div><strong>Undesirable Times:</strong> Before {{ '%02d:%02d'|format(policy.undesireable_start // 100, policy.undesireable_start % 100) }} or After {{ '%02d:%02d'|format(policy.undesireable_end // 100, policy.undesireable_end % 100) }}</div>
             </div>
             <div class="btn-group">
-                <button class="btn btn-secondary edit-policy" data-policy-id="{{ policy.policy_id }}">Edit</button>
+                <button class="btn btn-info edit-policy" data-policy-id="{{ policy.policy_id }}">Edit</button>
+                <button class="btn btn-danger delete-policy" data-policy-id="{{ policy.policy_id }}">Delete</button>
             </div>
         </div>
         {% endfor %}
     {% else %}
-        <p>No policies configured yet. Create one above to get started.</p>
+        <p style="color: #6c757d; text-align: center; padding: 2rem;">No policies configured yet. Create one above to get started.</p>
     {% endif %}
 </div>
 {% endblock %}

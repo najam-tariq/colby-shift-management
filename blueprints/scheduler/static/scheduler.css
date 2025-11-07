@@ -1,0 +1,686 @@
+/* Scheduler Styles - Matching Application Design Language */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.main-content {
+    padding: 0;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+/* Main Scheduler Section */
+.scheduler-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    border: 1px solid #f0f0f0;
+}
+
+/* Term Selector Section */
+.term-selector-section {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.term-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.term-header h3 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.term-badge {
+    background: #667eea;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.term-select-form {
+    margin-top: 1rem;
+}
+
+.term-selector {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.term-selector:hover {
+    border-color: #667eea;
+}
+
+.term-selector:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Policy Info Card */
+.policy-info-card {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.policy-info-card h3 {
+    color: #2c3e50;
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+}
+
+.policy-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.policy-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+}
+
+.policy-label {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.policy-value {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.btn-edit-policy {
+    display: inline-block;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.btn-edit-policy:hover {
+    color: #764ba2;
+}
+
+/* Statistics Summary */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.stat-card.stat-success {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
+.stat-card.stat-success .stat-value {
+    color: #10b981;
+}
+
+.stat-card.stat-warning {
+    background: #fff7ed;
+    border-color: #f59e0b;
+}
+
+.stat-card.stat-warning .stat-value {
+    color: #f59e0b;
+}
+
+/* Week Overview Section */
+.week-overview-section {
+    margin-bottom: 2rem;
+}
+
+.week-overview-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.week-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s;
+}
+
+.week-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.week-card.week-complete {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+
+.week-card.week-warning {
+    border-color: #f59e0b;
+    background: #fff7ed;
+}
+
+.week-card.week-empty {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.week-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.week-icon {
+    font-size: 1.5rem;
+}
+
+.week-num {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.week-dates {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.week-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.week-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.week-stat .stat-label {
+    color: #64748b;
+}
+
+.week-stat .stat-value {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Generation Form Section */
+.generation-form-section {
+    background: #f8f9fb;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.generation-form-section h3 {
+    color: #2c3e50;
+    margin: 0 0 1.5rem 0;
+}
+
+.generation-form {
+    max-width: 800px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    color: #2c3e50;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input[type="date"] {
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input[type="date"]:hover {
+    border-color: #667eea;
+}
+
+.form-group input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-options {
+    margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.checkbox-label:hover {
+    background: #f1f5f9;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-label span {
+    color: #2c3e50;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #64748b;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #475569;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(100, 116, 139, 0.4);
+}
+
+.btn-outline {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.form-help {
+    background: white;
+    border-left: 4px solid #667eea;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.form-help p {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.form-help ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.form-help li {
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+/* Quick Actions Section */
+.quick-actions-section {
+    margin-bottom: 2rem;
+}
+
+.quick-actions-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.action-card {
+    background: #f8f9fb;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+}
+
+.action-icon {
+    font-size: 2rem;
+}
+
+.action-label {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.alert-warning {
+    background: #fff7ed;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.alert-warning h3 {
+    margin: 0 0 0.5rem 0;
+    color: #92400e;
+}
+
+.alert-warning p {
+    margin: 0;
+}
+
+.alert-warning a {
+    color: #92400e;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* Generation Results Page */
+.results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.summary-card.summary-success {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
+.summary-card.summary-warning {
+    background: #fff7ed;
+    border-color: #f59e0b;
+}
+
+.summary-icon {
+    font-size: 2.5rem;
+}
+
+.summary-content {
+    flex: 1;
+}
+
+.summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.summary-label {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.info-card {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-card h3 {
+    color: #2c3e50;
+    margin: 0 0 1rem 0;
+}
+
+.info-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+}
+
+.info-label {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.violations-section, .student-distribution-section, .gaps-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.violations-section h3, .student-distribution-section h3, .gaps-section h3 {
+    color: #2c3e50;
+    margin: 0 0 1rem 0;
+}
+
+.violations-table, .distribution-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.violations-table th, .distribution-table th {
+    background: #f8f9fb;
+    padding: 0.75rem;
+    text-align: left;
+    color: #2c3e50;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.violations-table td, .distribution-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+}
+
+.violations-table tbody tr:hover, .distribution-table tbody tr:hover {
+    background: #f8f9fb;
+}
+
+.gap-summary {
+    background: #f8f9fb;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.gap-summary p {
+    margin: 0.5rem 0;
+    color: #64748b;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .week-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .policy-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

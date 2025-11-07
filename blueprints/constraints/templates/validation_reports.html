@@ -3,7 +3,7 @@
 {% block title %}Validation Reports - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .report-generation {
     background: #f8f9fa;
@@ -159,7 +159,7 @@
 {% endblock %}
 
 {% block header_title %}Validation Reports{% endblock %}
-{% block header_subtitle %}Generate and view shift duration validation reports (Issue #31){% endblock %}
+{% block header_subtitle %}Generate and view shift duration validation reports{% endblock %}
 
 {% block content %}
 <div class="report-generation">
@@ -235,7 +235,7 @@
                            class="export-btn pdf">PDF</a>
                         <a href="{{ url_for('constraints.export_validation_report_csv', report_id=report.report_id) }}" 
                            class="export-btn csv">CSV</a>
-                        {% if current_user.role == 'admin' or current_user.user_id == report.generated_by %}
+                        {% if current_user.role.lower() in ['admin', 'supervisor'] or current_user.user_id == report.generated_by %}
                         <button class="export-btn delete" 
                                 data-report-id="{{ report.report_id }}">Delete</button>
                         {% endif %}

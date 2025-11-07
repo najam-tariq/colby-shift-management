@@ -3,7 +3,7 @@
 {% block title %}Automatic Splitting System - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .splitting-system {
     background: white;
@@ -271,16 +271,16 @@
 {% endblock %}
 
 {% block header_title %}Automatic Splitting System{% endblock %}
-{% block header_subtitle %}Test and monitor automatic splitting of overly long shifts (Issue #28){% endblock %}
+{% block header_subtitle %}Test and monitor automatic splitting of overly long shifts{% endblock %}
 
 {% block content %}
 <div class="alert alert-info">
-    <strong>Issue #28:</strong> This system automatically splits time blocks exceeding 3 hours into compliant chunks with proper breaks to prevent overscheduling. All splits are logged for review.
+    <strong>Automatic Splitting:</strong> This system automatically splits time blocks exceeding 3 hours into compliant chunks with proper breaks to prevent overscheduling. All splits are logged for review.
 </div>
 
 <div class="splitting-system">
     <h2>Test Complete Processing System</h2>
-    <p>This tests both automatic splitting (Issue #28) and rejection (Issue #27) together.</p>
+    <p>This tests both automatic splitting and rejection together.</p>
     
     <div class="form-section">
         <div class="form-row">

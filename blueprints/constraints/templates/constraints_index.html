@@ -3,175 +3,41 @@
 {% block title %}Constraints & Equity - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
-<style>
-.constraints-dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.category-section {
-    margin-bottom: 30px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    overflow: hidden;
-}
-
-.category-header {
-    background: #2d3748;
-    color: white;
-    padding: 20px 25px;
-    margin-bottom: 0;
-    font-size: 1.25em;
-    font-weight: 600;
-    border-bottom: 3px solid #4a5568;
-}
-
-.category-items {
-    background: white;
-    padding: 25px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-}
-
-.dashboard-btn {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 24px;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-    display: block;
-    position: relative;
-    overflow: hidden;
-}
-
-.dashboard-btn:hover {
-    border-color: #007bff;
-    box-shadow: 0 4px 12px rgba(0,123,255,0.15);
-    transform: translateY(-2px);
-    background: white;
-}
-
-.dashboard-btn h4 {
-    margin: 0 0 12px 0;
-    color: #2d3748;
-    font-size: 1.15em;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.dashboard-btn p {
-    margin: 0;
-    color: #2d3748;
-    font-size: 0.95em;
-    line-height: 1.5;
-    font-weight: 500;
-}
-
-.dashboard-btn.primary {
-    border-left: 5px solid #007bff;
-}
-
-.dashboard-btn.primary:hover {
-    border-left-color: #0056b3;
-}
-
-.dashboard-btn.secondary {
-    border-left: 5px solid #6c757d;
-}
-
-.dashboard-btn.secondary:hover {
-    border-left-color: #495057;
-}
-
-.dashboard-btn.warning {
-    border-left: 5px solid #fd7e14;
-}
-
-.dashboard-btn.warning:hover {
-    border-left-color: #e8590c;
-}
-
-.dashboard-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #f1f3f4;
-}
-
-.dashboard-btn.disabled h4 {
-    color: #718096;
-}
-
-.dashboard-btn.disabled p {
-    color: #718096;
-}
-
-.dashboard-btn.disabled:hover {
-    transform: none;
-    border-color: #e9ecef;
-    box-shadow: none;
-    background: #f1f3f4;
-}
-
-/* Improved accessibility and contrast */
-.dashboard-btn:focus {
-    outline: 3px solid #007bff;
-    outline-offset: 2px;
-}
-
-/* Better spacing for mobile */
-@media (max-width: 768px) {
-    .constraints-dashboard {
-        padding: 15px;
-    }
-    
-    .category-items {
-        grid-template-columns: 1fr;
-        padding: 20px;
-        gap: 15px;
-    }
-    
-    .dashboard-btn {
-        padding: 20px;
-    }
-    
-    .category-header {
-        padding: 15px 20px;
-        font-size: 1.2em;
-    }
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 {% endblock %}
 
 {% block header_title %}Constraints & Equity{% endblock %}
 {% block header_subtitle %}Manage shift rules, duration policies, and preference settings{% endblock %}
 
 {% block content %}
-<div class="constraints-dashboard">
+<div class="dashboard-options">
     <!-- Core Policy Management -->
     <div class="category-section">
         <div class="category-header">
             Core Policy Management
         </div>
         <div class="category-items">
-            <a href="{{ url_for('constraints.policy_config') }}" class="dashboard-btn primary">
-                <h4>Policy Configuration</h4>
-                <p>Set shift length limits, break times, and undesirable windows</p>
-            </a>
+            <div class="dashboard-row">
+                <a href="{{ url_for('constraints.policy_config') }}" class="dashboard-btn primary">
+                    <div class="btn-content">
+                        <h3>⚙️ Policy Configuration</h3>
+                        <p>Set shift length limits, break times, and undesirable windows</p>
+                    </div>
+                </a>
 
-            <a href="{{ url_for('constraints.admin_settings') }}" class="dashboard-btn primary">
-                <h4>Admin Settings</h4>
-                <p>Configure shift duration policies with audit logging</p>
-            </a>
-
+                <a href="{{ url_for('constraints.admin_settings') }}" class="dashboard-btn primary">
+                    <div class="btn-content">
+                        <h3>🔧 Admin Settings</h3>
+                        <p>Configure shift duration policies with audit logging</p>
+                    </div>
+                </a>
+            </div>
+            
             <a href="{{ url_for('constraints.duration_validation_interface') }}" class="dashboard-btn primary">
-                <h4>Duration Validation</h4>
-                <p>Test and validate shift duration constraints</p>
+                <div class="btn-content">
+                    <h3>✅ Duration Validation</h3>
+                    <p>Test and validate shift duration constraints</p>
+                </div>
             </a>
         </div>
     </div>
@@ -182,15 +48,21 @@
             Gap & Transition Management
         </div>
         <div class="category-items">
-            <a href="{{ url_for('constraints.gap_management') }}" class="dashboard-btn primary">
-                <h4>Gap Management</h4>
-                <p>Prevent fragmented 15-30 minute slots and manage schedule gaps intelligently</p>
-            </a>
+            <div class="dashboard-row">
+                <a href="{{ url_for('constraints.gap_management') }}" class="dashboard-btn primary">
+                    <div class="btn-content">
+                        <h3>📏 Gap Management</h3>
+                        <p>Prevent fragmented 15-30 minute slots and manage schedule gaps intelligently</p>
+                    </div>
+                </a>
 
-            <a href="{{ url_for('constraints.transition_violations') }}" class="dashboard-btn primary">
-                <h4>Transition Time Violations</h4>
-                <p>Monitor and manage minimum break time between consecutive shifts</p>
-            </a>
+                <a href="{{ url_for('constraints.transition_violations') }}" class="dashboard-btn primary">
+                    <div class="btn-content">
+                        <h3>⏱️ Transition Time Violations</h3>
+                        <p>Monitor and manage minimum break time between consecutive shifts</p>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -200,15 +72,21 @@
             Violation Detection & Reports
         </div>
         <div class="category-items">
-            <a href="{{ url_for('constraints.violation_alerts') }}" class="dashboard-btn warning">
-                <h4>Violation Alerts</h4>
-                <p>Visual alerts for shifts violating duration rules</p>
-            </a>
+            <div class="dashboard-row">
+                <a href="{{ url_for('constraints.violation_alerts') }}" class="dashboard-btn warning">
+                    <div class="btn-content">
+                        <h3>⚠️ Violation Alerts</h3>
+                        <p>Visual alerts for shifts violating duration rules</p>
+                    </div>
+                </a>
 
-            <a href="{{ url_for('constraints.validation_reports') }}" class="dashboard-btn secondary">
-                <h4>Validation Summary Reports</h4>
-                <p>Generate comprehensive reports listing all duration violations for quality review</p>
-            </a>
+                <a href="{{ url_for('constraints.validation_reports') }}" class="dashboard-btn secondary">
+                    <div class="btn-content">
+                        <h3>📊 Validation Summary Reports</h3>
+                        <p>Generate comprehensive reports listing all duration violations for quality review</p>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -218,15 +96,21 @@
             Preferences
         </div>
         <div class="category-items">
-            <a href="{{ url_for('constraints.volunteer_preferences') }}" class="dashboard-btn secondary">
-                <h4>Volunteer Preferences</h4>
-                <p>Mark students as volunteers for early/late shifts</p>
-            </a>
+            <div class="dashboard-row">
+                <a href="{{ url_for('constraints.volunteer_preferences') }}" class="dashboard-btn secondary">
+                    <div class="btn-content">
+                        <h3>🙋 Volunteer Preferences</h3>
+                        <p>Mark students as volunteers for early/late shifts</p>
+                    </div>
+                </a>
 
-            <a href="{{ url_for('constraints.undesirable_windows') }}" class="dashboard-btn secondary">
-                <h4>Undesirable Time Windows</h4>
-                <p>Define time periods to avoid when scheduling (early morning, late evening, weekends)</p>
-            </a>
+                <a href="{{ url_for('constraints.undesirable_windows') }}" class="dashboard-btn secondary">
+                    <div class="btn-content">
+                        <h3>🚫 Undesirable Time Windows</h3>
+                        <p>Define time periods to avoid when scheduling (early morning, late evening, weekends)</p>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -237,8 +121,10 @@
         </div>
         <div class="category-items">
             <a href="{{ url_for('constraints.automatic_rejection_interface') }}" class="dashboard-btn primary">
-                <h4>Automatic Processing</h4>
-                <p>Test automatic rejection and splitting of shifts</p>
+                <div class="btn-content">
+                    <h3>🤖 Automatic Processing</h3>
+                    <p>Test automatic rejection and splitting of shifts</p>
+                </div>
             </a>
         </div>
     </div>

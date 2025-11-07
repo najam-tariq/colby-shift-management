@@ -3,7 +3,7 @@
 {% block title %}Automatic Rejection System - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .rejection-system {
     background: white;
@@ -193,11 +193,11 @@
 {% endblock %}
 
 {% block header_title %}Automatic Rejection System{% endblock %}
-{% block header_subtitle %}Test and monitor automatic rejection of impractical shifts (Issue #27){% endblock %}
+{% block header_subtitle %}Test and monitor automatic rejection of impractical shifts{% endblock %}
 
 {% block content %}
 <div class="alert alert-info">
-    <strong>Issue #27:</strong> This system automatically rejects any generated shift shorter than 1 hour to prevent impractical shifts from appearing in schedules. All rejections are logged for debugging purposes.
+    <strong>Automatic Rejection:</strong> This system automatically rejects any generated shift shorter than 1 hour to prevent impractical shifts from appearing in schedules. All rejections are logged for debugging purposes.
 </div>
 
 <div class="rejection-system">

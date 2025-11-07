@@ -88,7 +88,7 @@
 {% block header_subtitle %}Role: {{ current_user.role.title() }}{% endblock %}
 
 {% block content %}
-<!-- Violation Alert Widget (Issue #30) - Hidden for students -->
+<!-- Violation Alert Widget - Hidden for students -->
 {% if current_user.role != 'student' %}
 {% if violation_summary and violation_summary.total_violations > 0 %}
 <div class="violation-alert-widget {% if violation_summary.by_severity.critical > 0 %}critical{% elif violation_summary.by_severity.error > 0 %}warning{% endif %}" 

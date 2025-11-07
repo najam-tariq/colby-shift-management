@@ -561,8 +561,8 @@ def admin_settings():
     """Display admin settings panel for shift duration policies (Issue #29)"""
     from models import PolicyAuditLog
     
-    # Check if user has admin role
-    if current_user.role != 'admin':
+    # Check if user has supervisor/admin role
+    if current_user.role.lower() not in ['admin', 'supervisor']:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('constraints.index'))
     
@@ -592,7 +592,7 @@ def admin_create_policy():
     from models import PolicyAuditLog
     
     # Check admin privileges
-    if current_user.role != 'admin':
+    if current_user.role.lower() not in ['admin', 'supervisor']:
         return jsonify({'success': False, 'error': 'Admin privileges required'}), 403
     
     data = request.get_json()
@@ -648,7 +648,7 @@ def admin_update_policy(policy_id):
     from models import PolicyAuditLog
     
     # Check admin privileges
-    if current_user.role != 'admin':
+    if current_user.role.lower() not in ['admin', 'supervisor']:
         return jsonify({'success': False, 'error': 'Admin privileges required'}), 403
     
     policy = Policy.query.get_or_404(policy_id)
@@ -721,7 +721,7 @@ def get_policy_audit_log(policy_id):
     from models import PolicyAuditLog
     
     # Check admin privileges
-    if current_user.role != 'admin':
+    if current_user.role.lower() not in ['admin', 'supervisor']:
         return jsonify({'success': False, 'error': 'Admin privileges required'}), 403
     
     try:
@@ -1274,8 +1274,8 @@ def delete_validation_report(report_id):
     """Delete validation report (Issue #31)"""
     report = ValidationReport.query.get_or_404(report_id)
     
-    # Check permissions - only admin or report creator can delete
-    if current_user.role != 'admin' and current_user.user_id != report.generated_by:
+    # Check permissions - only admin/supervisor or report creator can delete
+    if current_user.role.lower() not in ['admin', 'supervisor'] and current_user.user_id != report.generated_by:
         return jsonify({'success': False, 'error': 'Permission denied'}), 403
     
     try:

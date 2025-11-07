@@ -1,0 +1,651 @@
+/* Constraints Route CSS - Matching Application Theme */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Main content area */
+.main-content {
+    padding: 0;
+}
+
+/* Page header with gradient text */
+.page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.page-header h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    font-size: 1.1rem;
+    color: #666;
+    margin: 0;
+}
+
+/* Category sections */
+.category-section {
+    margin-bottom: 2.5rem;
+}
+
+.category-header {
+    font-size: 1.4rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #e1e5e9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Dashboard options grid */
+.dashboard-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Dashboard row for side-by-side cards */
+.dashboard-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* Dashboard buttons/cards - Primary Style */
+.dashboard-btn {
+    display: block;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dashboard-btn:hover::before {
+    opacity: 1;
+}
+
+.dashboard-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+}
+
+.dashboard-btn.full-width {
+    width: 100%;
+}
+
+/* Primary button style */
+.dashboard-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.dashboard-btn.primary::before {
+    display: none;
+}
+
+.dashboard-btn.primary:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a67d8 0%, #6a3f8f 100%);
+}
+
+.dashboard-btn.primary h3,
+.dashboard-btn.primary h4,
+.dashboard-btn.primary p {
+    color: white;
+}
+
+/* Secondary button style */
+.dashboard-btn.secondary {
+    background: white;
+    border-color: #e1e5e9;
+}
+
+/* Warning/Alert style */
+.dashboard-btn.warning {
+    background: white;
+    border-color: #ffc107;
+}
+
+.dashboard-btn.warning::before {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+}
+
+.dashboard-btn.warning:hover {
+    border-color: #ff9800;
+    box-shadow: 0 8px 24px rgba(255, 193, 7, 0.2);
+}
+
+/* Danger/Critical style */
+.dashboard-btn.danger {
+    background: white;
+    border-color: #dc3545;
+}
+
+.dashboard-btn.danger::before {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.dashboard-btn.danger:hover {
+    border-color: #c82333;
+    box-shadow: 0 8px 24px rgba(220, 53, 69, 0.2);
+}
+
+/* Success style */
+.dashboard-btn.success {
+    background: white;
+    border-color: #28a745;
+}
+
+.dashboard-btn.success::before {
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+}
+
+.dashboard-btn.success:hover {
+    border-color: #218838;
+    box-shadow: 0 8px 24px rgba(40, 167, 69, 0.2);
+}
+
+/* Button content */
+.btn-content {
+    position: relative;
+    z-index: 1;
+}
+
+.btn-content h3,
+.dashboard-btn h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2c3e50;
+    line-height: 1.3;
+}
+
+.btn-content p,
+.dashboard-btn p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* For backward compatibility with h4 tags */
+.dashboard-btn h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+/* Icon styling in buttons */
+.dashboard-btn .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* Info box styling */
+.info-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.info-box .icon {
+    font-size: 1.5rem;
+    color: #667eea;
+}
+
+.info-box p {
+    margin: 0;
+    color: #495057;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Alert/Notice boxes */
+.alert-box {
+    background: white;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.alert-box.warning {
+    border-left-color: #ffc107;
+    background: #fffbf0;
+}
+
+.alert-box.danger {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.alert-box.success {
+    border-left-color: #28a745;
+    background: #f0fff4;
+}
+
+.alert-box h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.alert-box p {
+    margin: 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* Disabled state */
+.dashboard-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.dashboard-btn.disabled::before {
+    display: none;
+}
+
+.dashboard-btn.disabled h3,
+.dashboard-btn.disabled h4,
+.dashboard-btn.disabled p {
+    color: #adb5bd;
+}
+
+.dashboard-btn.disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: #dee2e6;
+}
+
+/* Badge/Status indicators */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.status-badge.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.critical {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Improved accessibility and contrast */
+.dashboard-btn:focus {
+    outline: 3px solid #667eea;
+    outline-offset: 3px;
+}
+
+.dashboard-btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Loading state */
+.dashboard-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.dashboard-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #667eea;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   STANDARD FORM BUTTONS
+   ============================================ */
+
+/* Base button style for forms and inline actions */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.5;
+}
+
+/* Primary button - main actions */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6a3f8f 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Secondary button - alternative actions */
+.btn-secondary {
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+.btn-secondary:hover {
+    background: #e2e6ea;
+    border-color: #dae0e5;
+    transform: translateY(-1px);
+}
+
+/* Danger button - destructive actions */
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Success button - positive actions */
+.btn-success {
+    background: #28a745;
+    color: white;
+    border: none;
+}
+
+.btn-success:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Warning button - caution actions */
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+    border: none;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Info button - informational actions */
+.btn-info {
+    background: #17a2b8;
+    color: white;
+    border: none;
+}
+
+.btn-info:hover {
+    background: #138496;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+
+/* Outline variants for subtle actions */
+.btn-outline-primary {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.btn-outline-primary:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 2px solid #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* Button sizes */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+}
+
+/* Disabled state */
+.btn:disabled,
+.btn.disabled,
+button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Focus state for accessibility */
+.btn:focus {
+    outline: 3px solid rgba(102, 126, 234, 0.5);
+    outline-offset: 2px;
+}
+
+.btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Button group styling */
+.btn-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-group .btn {
+    flex: 0 0 auto;
+}
+
+/* Full width button */
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+/* Link styled as button */
+a.btn {
+    line-height: inherit;
+}
+
+a.btn:hover {
+    text-decoration: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .page-header p {
+        font-size: 1rem;
+    }
+    
+    .dashboard-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-items {
+        gap: 0.875rem;
+    }
+    
+    .dashboard-btn {
+        padding: 1.25rem;
+    }
+    
+    .category-header {
+        font-size: 1.25rem;
+    }
+    
+    .btn-content h3,
+    .dashboard-btn h3,
+    .dashboard-btn h4 {
+        font-size: 1.05rem;
+    }
+    
+    /* Form button responsive */
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .btn {
+        padding: 0.875rem 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .dashboard-btn {
+        padding: 1rem;
+    }
+    
+    .btn-content h3,
+    .dashboard-btn h3,
+    .dashboard-btn h4 {
+        font-size: 1rem;
+    }
+    
+    .btn-content p,
+    .dashboard-btn p {
+        font-size: 0.875rem;
+    }
+    
+    .category-header {
+        font-size: 1.15rem;
+    }
+    
+    .info-box {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .dashboard-btn {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    .dashboard-btn::before {
+        display: none;
+    }
+    
+    .info-box {
+        border: 1px solid #dee2e6;
+        box-shadow: none;
+    }
+}

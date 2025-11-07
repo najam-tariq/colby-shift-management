@@ -3,7 +3,7 @@
 {% block title %}Gap Management - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .gap-management-container {
     max-width: 1200px;
@@ -325,7 +325,7 @@
                     <small>Generate longer shifts instead of fragmented ones</small>
                 </div>
                 
-                <!-- Issue #35: Transition time settings -->
+                <!-- Transition time settings -->
                 <div class="form-group">
                     <label for="min_transition_time">Minimum Transition Time (minutes):</label>
                     <input type="number" name="min_transition_time" id="min_transition_time" 

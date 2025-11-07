@@ -3,7 +3,7 @@
 {% block title %}Shift Violation Alerts - Colby Shift Management{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('constraints.static', filename='constraints.css') }}">
 <style>
 .violation-alerts {
     max-width: 1200px;
@@ -311,7 +311,7 @@
 {% endblock %}
 
 {% block header_title %}Shift Violation Alerts{% endblock %}
-{% block header_subtitle %}Visual alerts for shifts violating duration rules (Issue #30){% endblock %}
+{% block header_subtitle %}Visual alerts for shifts violating duration rules{% endblock %}
 
 {% block content %}
 <div class="violation-alerts">
@@ -413,7 +413,7 @@
                     </tbody>
                 </table>
             {% else %}
-                <p>No active violations found. Run violation detection on a term to identify issues.</p>
+                <p>No active violations found. Run violation detection on a term to check for any problems.</p>
             {% endif %}
         </div>
     </div>

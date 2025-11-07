@@ -78,16 +78,20 @@ def export_csv():
         # Calculate duration using actual shift date
         shift_start = datetime.combine(shift.date, shift.start_time)
         shift_end = datetime.combine(shift.date, shift.end_time)
-        duration = (shift_end - shift_start).seconds / 3600
+        duration_minutes = (shift_end - shift_start).seconds / 60  # Duration in minutes
+        duration = duration_minutes / 60  # Duration in hours for display
         
         # Apply constraint checks
         constraint_status = 'Valid'
         warnings = []
         
         if policy:
-            if duration < policy.min_shift_length or duration > policy.max_shift_length:
+            if duration_minutes < policy.min_shift_length or duration_minutes > policy.max_shift_length:
                 constraint_status = 'VIOLATION'
-            if shift.start_time.hour < policy.undesireable_start or shift.end_time.hour > policy.undesireable_end:
+            # Convert time to HHMM format for comparison (e.g., 8:30 -> 830)
+            start_time_int = shift.start_time.hour * 100 + shift.start_time.minute
+            end_time_int = shift.end_time.hour * 100 + shift.end_time.minute
+            if start_time_int < policy.undesireable_start or end_time_int > policy.undesireable_end:
                 if constraint_status == 'Valid':
                     constraint_status = 'Warning'
                     warnings.append('Undesirable time')
@@ -177,17 +181,21 @@ def export_ical():
         # Calculate duration using actual shift date
         shift_start = datetime.combine(shift.date, shift.start_time)
         shift_end = datetime.combine(shift.date, shift.end_time)
-        duration = (shift_end - shift_start).seconds / 3600
+        duration_minutes = (shift_end - shift_start).seconds / 60  # Duration in minutes
+        duration = duration_minutes / 60  # Duration in hours for display
         
         # Apply constraint checks
         constraint_status = 'Valid'
         description_parts = [f'Shift for {shift.user.name} ({shift.user.email})']
         
         if policy:
-            if duration < policy.min_shift_length or duration > policy.max_shift_length:
+            if duration_minutes < policy.min_shift_length or duration_minutes > policy.max_shift_length:
                 constraint_status = 'VIOLATION'
-                description_parts.append(f'⚠️ CONSTRAINT VIOLATION: Shift length {duration:.1f}h outside allowed range ({policy.min_shift_length}-{policy.max_shift_length}h)')
-            if shift.start_time.hour < policy.undesireable_start or shift.end_time.hour > policy.undesireable_end:
+                description_parts.append(f'⚠️ CONSTRAINT VIOLATION: Shift length {duration:.1f}h outside allowed range ({policy.min_shift_length/60:.1f}-{policy.max_shift_length/60:.1f}h)')
+            # Convert time to HHMM format for comparison (e.g., 8:30 -> 830)
+            start_time_int = shift.start_time.hour * 100 + shift.start_time.minute
+            end_time_int = shift.end_time.hour * 100 + shift.end_time.minute
+            if start_time_int < policy.undesireable_start or end_time_int > policy.undesireable_end:
                 if constraint_status == 'Valid':
                     constraint_status = 'Warning'
                 description_parts.append(f'⚠️ Warning: Shift occurs during undesirable hours')
@@ -299,17 +307,21 @@ def export_ical_student(token):
         # Calculate duration using actual shift date
         shift_start = datetime.combine(shift.date, shift.start_time)
         shift_end = datetime.combine(shift.date, shift.end_time)
-        duration = (shift_end - shift_start).seconds / 3600
+        duration_minutes = (shift_end - shift_start).seconds / 60  # Duration in minutes
+        duration = duration_minutes / 60  # Duration in hours for display
         
         # Apply constraint checks
         constraint_status = 'Valid'
         description_parts = [f'Shift for {student.name} ({student.email})']
         
         if policy:
-            if duration < policy.min_shift_length or duration > policy.max_shift_length:
+            if duration_minutes < policy.min_shift_length or duration_minutes > policy.max_shift_length:
                 constraint_status = 'VIOLATION'
-                description_parts.append(f'⚠️ CONSTRAINT VIOLATION: Shift length {duration:.1f}h outside allowed range ({policy.min_shift_length}-{policy.max_shift_length}h)')
-            if shift.start_time.hour < policy.undesireable_start or shift.end_time.hour > policy.undesireable_end:
+                description_parts.append(f'⚠️ CONSTRAINT VIOLATION: Shift length {duration:.1f}h outside allowed range ({policy.min_shift_length/60:.1f}-{policy.max_shift_length/60:.1f}h)')
+            # Convert time to HHMM format for comparison (e.g., 8:30 -> 830)
+            start_time_int = shift.start_time.hour * 100 + shift.start_time.minute
+            end_time_int = shift.end_time.hour * 100 + shift.end_time.minute
+            if start_time_int < policy.undesireable_start or end_time_int > policy.undesireable_end:
                 if constraint_status == 'Valid':
                     constraint_status = 'Warning'
                 description_parts.append(f'⚠️ Warning: Shift occurs during undesirable hours')
@@ -690,21 +702,25 @@ def preview():
         # Calculate duration and check constraints
         shift_start = datetime.combine(date.today(), shift.start_time)
         shift_end = datetime.combine(date.today(), shift.end_time)
-        duration = (shift_end - shift_start).seconds / 3600
+        duration_minutes = (shift_end - shift_start).seconds / 60  # Duration in minutes to match policy units
+        duration = duration_minutes / 60  # Duration in hours for display
         
         constraint_passed = True
         constraint_warnings = []
         
         if policy:
-            if duration < policy.min_shift_length:
+            if duration_minutes < policy.min_shift_length:
                 constraint_passed = False
                 constraint_warnings.append(f'Short')
-            if duration > policy.max_shift_length:
+            if duration_minutes > policy.max_shift_length:
                 constraint_passed = False
                 constraint_warnings.append(f'Long')
-            if shift.start_time.hour < policy.undesireable_start:
+            # Convert time to HHMM format for comparison (e.g., 8:30 -> 830)
+            start_time_int = shift.start_time.hour * 100 + shift.start_time.minute
+            end_time_int = shift.end_time.hour * 100 + shift.end_time.minute
+            if start_time_int < policy.undesireable_start:
                 constraint_warnings.append('Early')
-            if shift.end_time.hour > policy.undesireable_end:
+            if end_time_int > policy.undesireable_end:
                 constraint_warnings.append('Late')
         
         weeks_dict[week_start]['days'][shift.date].append({

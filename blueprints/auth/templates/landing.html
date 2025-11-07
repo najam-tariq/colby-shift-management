@@ -88,7 +88,8 @@
 {% block header_subtitle %}Role: {{ current_user.role.title() }}{% endblock %}
 
 {% block content %}
-<!-- Violation Alert Widget (Issue #30) -->
+<!-- Violation Alert Widget (Issue #30) - Hidden for students -->
+{% if current_user.role != 'student' %}
 {% if violation_summary and violation_summary.total_violations > 0 %}
 <div class="violation-alert-widget {% if violation_summary.by_severity.critical > 0 %}critical{% elif violation_summary.by_severity.error > 0 %}warning{% endif %}" 
      data-href="{{ url_for('constraints.violation_alerts') }}" style="cursor: pointer;">
@@ -127,8 +128,10 @@
     <div class="violation-text">No Active Violations</div>
 </div>
 {% endif %}
+{% endif %}
 
 <div class="dashboard-options">
+    {% if current_user.role != 'student' %}
     <a href="{{ url_for('availability.availability') }}" class="dashboard-btn secondary">
         <div class="btn-content">
             <h3>Availability</h3>
@@ -156,6 +159,7 @@
             <p>Generate and manage schedules</p>
         </div>
     </a>
+    {% endif %}
 
     <a href="{{ url_for('outputs.index') }}" class="dashboard-btn secondary">
         <div class="btn-content">

@@ -15,10 +15,32 @@
     .calendar-grid {
         min-width: 900px;
         background: white;
+        display: grid;
+        grid-template-columns: auto repeat(7, 1fr);
+        gap: 1px;
+        background: #ddd;
+        border: 1px solid #ddd;
+    }
+
+    .time-column-header, .day-header {
+        background: #f8f9fa;
+        padding: 8px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .time-column {
+        background: #f8f9fa;
+        padding: 4px;
+        text-align: right;
+        font-size: 12px;
     }
     
     .calendar-cell {
         height: 60px;
+        position: relative;
+        background: white;
+        border: none;
     }
     
     @media (max-width: 768px) {
@@ -37,11 +59,18 @@
         display: flex;
         flex-direction: column;
         padding: 4px;
+        position: absolute;
+        width: calc(100% - 8px);
+        height: calc(100% - 8px);
+        overflow: hidden;
     }
 
     .time-block-title {
         font-weight: bold;
         margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .time-block-capacity {
@@ -50,14 +79,34 @@
         background: rgba(255,255,255,0.8);
         border-radius: 2px;
         padding: 1px 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .modal {
         display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
     }
     
     .modal[style*="display: block"] {
         display: flex !important;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 100%;
     }
 </style>
 {% endblock %}
@@ -88,11 +137,10 @@
             <div class="day-header">Saturday</div>
         </div>
     </div>
-    </div>
 </div>
 
 <!-- Time block modal -->
-<div id="time-block-modal" class="modal" style="display: none;">
+<div id="time-block-modal" class="modal">
     <div class="modal-content">
         <h3>Add Time Block</h3>
         <form id="time-block-form">
@@ -104,151 +152,9 @@
                 <label for="block-start">Start Time:</label>
                 <input type="time" id="block-start" required>
             </div>
-
-            <div class="section-content">
-                <form method="POST" enctype="multipart/form-data" id="coverage-form">
-                    <!-- Coverage Requirements Upload Area -->
-                    <div class="upload-area">
-                        <div class="upload-icon">🏢</div>
-                        <p class="upload-text">Add new coverage requirement for staffing needs</p>
-                        <input type="hidden" name="action" value="add_coverage">
-                        {% if selected_term %}
-                        <input type="hidden" name="term_id" value="{{ selected_term.term_id }}">
-                        {% endif %}
-
-                        <div class="coverage-inputs">
-                            <div class="input-row">
-                                <select name="day_of_week" id="day_of_week" required>
-                                    <option value="0">Monday</option>
-                                    <option value="1">Tuesday</option>
-                                    <option value="2">Wednesday</option>
-                                    <option value="3">Thursday</option>
-                                    <option value="4">Friday</option>
-                                    <option value="5">Saturday</option>
-                                    <option value="6">Sunday</option>
-                                </select>
-                                <input type="time" name="start_time" id="start_time" placeholder="Start" required>
-                                <input type="time" name="end_time" id="end_time" placeholder="End" required>
-                                <select name="role_required" id="role_required" required>
-                                    <option value="student">Student</option>
-                                    <option value="supervisor">Supervisor</option>
-                                    <option value="manager">Manager</option>
-                                </select>
-                                <input type="number" name="required_count" id="required_count" min="1" max="10"
-                                    value="1" placeholder="Count" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn-primary">
-                            💾 Add Coverage Requirement
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Coverage Format Guide (moved outside add coverage form to avoid nested form issues) -->
-                <button type="button" class="guide-toggle" onclick="toggleGuide()">
-                    📘 View Coverage Format Guide
-                </button>
-
-                <div id="coverageGuide" class="csv-guide" style="display: none;">
-                    <h4>Coverage Requirements Guide:</h4>
-                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                        <li><strong>Day:</strong> Select the day of the week for coverage</li>
-                        <li><strong>Time Range:</strong> Define start and end times (24-hour format)</li>
-                        <li><strong>Role:</strong> Choose required staff role (Student/Supervisor/Manager)</li>
-                        <li><strong>Count:</strong> Number of staff members needed during this window</li>
-                        <li><strong>Overlap Check:</strong> System prevents conflicting time windows</li>
-                    </ul>
-                </div>
-
-                <!-- Current Coverage Requirements (outside the add coverage form so delete buttons submit their own forms correctly) -->
-                {% if staffing_needs %}
-                <table class="coverage-table" id="coverageTable">
-                    <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>Time Window</th>
-                            <th>Role</th>
-                            <th>Required Count</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for need in staffing_needs %}
-                        <tr data-need-id="{{ need.need_id }}">
-                            <td>
-                                {% set day_names =
-                                ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
-                                <span class="day-badge view-mode">{{ day_names[need.day_of_week] }}</span>
-                                <select class="edit-mode" name="day_of_week" style="display:none;">
-                                    {% for i in range(7) %}
-                                    <option value="{{ i }}" {% if i==need.day_of_week %}selected{% endif %}>{{
-                                        day_names[i] }}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td>
-                                <span class="time-range view-mode">{{ need.start_time.strftime('%H:%M') }} - {{
-                                    need.end_time.strftime('%H:%M') }}</span>
-                                <div class="edit-mode" style="display:none;">
-                                    <input type="time" name="start_time" value="{{ need.start_time.strftime('%H:%M') }}"
-                                        required>
-                                    <input type="time" name="end_time" value="{{ need.end_time.strftime('%H:%M') }}"
-                                        required>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="role-badge view-mode {{ need.role_required }}">{{
-                                    need.role_required.title() }}</span>
-                                <select class="edit-mode" name="role_required" style="display:none;">
-                                    {% for r in ['student','supervisor','manager'] %}
-                                    <option value="{{ r }}" {% if r==need.role_required %}selected{% endif %}>{{
-                                        r.title() }}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td>
-                                <span class="count-badge view-mode">{{ need.required_count }}</span>
-                                <input type="number" class="edit-mode" name="required_count" min="1" max="10"
-                                    value="{{ need.required_count }}" style="display:none;">
-                            </td>
-                            <td class="actions-cell">
-                                <div class="view-mode">
-                                    <button type="button" class="action-button small row-btn" onclick="enterEdit(this)"
-                                        title="Edit">✏️ Edit</button>
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="action" value="delete_coverage">
-                                        <input type="hidden" name="need_id" value="{{ need.need_id }}">
-                                        <button type="submit" class="btn-delete row-btn action-button" title="Delete"
-                                            onclick="return confirm('Delete this coverage requirement?')">🗑️
-                                            Delete</button>
-                                    </form>
-                                </div>
-                                <div class="edit-mode" style="display:none; gap:0.4rem;">
-                                    <button type="button" class="btn-primary small row-btn" onclick="saveEdit(this)">💾
-                                        Save</button>
-                                    <button type="button" class="btn-secondary small row-btn"
-                                        onclick="cancelEdit(this)">↩️
-                                        Cancel</button>
-                                    <div class="inline-errors"
-                                        style="color:#b30000; font-size:0.75rem; margin-top:0.25rem;"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty-state">
-                    <h4>📋 No Coverage Requirements Defined</h4>
-                    <p>Add your first coverage window above to get started with staffing requirements.</p>
-                </div>
-                {% endif %}
-
-                <div class="form-actions">
-                    <a href="{{ url_for('auth.shiftManagement') }}" class="btn-secondary">
-                        🏠 Back to Dashboard
-                    </a>
-                </div>
+            <div class="form-group">
+                <label for="block-end">End Time:</label>
+                <input type="time" id="block-end" required>
             </div>
             <div class="form-group">
                 <label for="student-capacity">Student Capacity:</label>
@@ -269,169 +175,176 @@
             </div>
         </form>
     </div>
-
-    <!-- Coverage Gap Warnings Dashboard -->
-    {% if gap_warnings %}
-    <div class="gap-dashboard" id="gapDashboard">
-        <h3>🚨 Coverage Gap Warnings <button type="button" class="gap-toggle-btn" onclick="toggleGapDashboard()"
-                id="gapToggle">Hide</button></h3>
-        <p class="dashboard-sub">Automatic analysis of current requirements vs availability</p>
-        <table class="gap-table">
-            <thead>
-                <tr>
-                    <th>Day</th>
-                    <th>Window</th>
-                    <th>Role</th>
-                    <th>Required</th>
-                    <th>Fully Avail</th>
-                    <th>Partial</th>
-                    <th>Severity</th>
-                    <th>Reasons</th>
-                    <th>Suggested Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for gap in gap_warnings %}
-                <tr class="severity-{{ gap.severity }}">
-                    <td>{{ gap.day }}</td>
-                    <td>{{ gap.start }} - {{ gap.end }}</td>
-                    <td>{{ gap.role.title() }}</td>
-                    <td>{{ gap.required }}</td>
-                    <td>{{ gap.full_available }}</td>
-                    <td>{{ gap.partial_available }}</td>
-                    <td>
-                        {% if gap.severity == 'critical' %}<span class="sev-badge critical">Critical</span>{% endif %}
-                        {% if gap.severity == 'high' %}<span class="sev-badge high">High</span>{% endif %}
-                        {% if gap.severity == 'medium' %}<span class="sev-badge medium">Medium</span>{% endif %}
-                        {% if gap.severity == 'low' %}<span class="sev-badge low">Low</span>{% endif %}
-                    </td>
-                    <td>
-                        <ul class="reason-list">
-                            {% for r in gap.reasons %}<li>{{ r }}</li>{% endfor %}
-                        </ul>
-                    </td>
-                    <td>
-                        <ul class="suggestion-list">
-                            {% for s in gap.suggestions %}<li>{{ s }}</li>{% endfor %}
-                        </ul>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="no-gaps">✅ No Coverage Gaps Detected – all current staffing windows have sufficient coverage.</div>
-    {% endif %}
 </div>
 
-<script src="{{ url_for('staffing.static', filename='staffing.js') }}"></script>
 <script>
-    // Inline edit logic (client-side undo/redo stacks kept in memory)
-    const undoStack = [];
-    const redoStack = [];
+// Utility functions
+function createTimeBlock(day, title, start, end, color, capacity) {
+    const startHour = parseInt(start.split(':')[0]);
+    const endHour = parseInt(end.split(':')[0]);
+    const duration = endHour - startHour;
+    
+    const startCell = document.querySelector(`.calendar-cell[data-day="${day}"][data-time="${start}"]`);
+    if (!startCell) return;
+    
+    const block = document.createElement('div');
+    block.className = 'time-block';
+    block.style.background = color;
+    block.style.height = `${duration * 100}%`;
+    
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'time-block-title';
+    titleDiv.textContent = title;
+    
+    const capacityDiv = document.createElement('div');
+    capacityDiv.className = 'time-block-capacity';
+    capacityDiv.textContent = `Capacity: ${capacity} students`;
+    
+    block.appendChild(titleDiv);
+    block.appendChild(capacityDiv);
+    
+    startCell.appendChild(block);
+}
 
-    function enterEdit(btn) {
-        const row = btn.closest('tr');
-        row.classList.add('editing-row');
-        row.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
-        row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'flex');
+function showModal(day, time) {
+    const modal = document.getElementById('time-block-modal');
+    const form = document.getElementById('time-block-form');
+    const startInput = document.getElementById('block-start');
+    
+    modal.style.display = 'block';
+    startInput.value = time;
+    
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        createTimeBlock(
+            day,
+            document.getElementById('block-title').value,
+            document.getElementById('block-start').value,
+            document.getElementById('block-end').value,
+            document.getElementById('block-color').value,
+            document.getElementById('student-capacity').value
+        );
+        closeModal();
+    };
+}
+
+function closeModal() {
+    const modal = document.getElementById('time-block-modal');
+    modal.style.display = 'none';
+    document.getElementById('time-block-form').reset();
+}
+
+function generateTimeSlots() {
+    const calendarGrid = document.getElementById('calendar-grid');
+    // Clear existing time slots
+    const existingSlots = document.querySelectorAll('.time-column, .calendar-cell');
+    existingSlots.forEach(slot => slot.remove());
+    const times = [];
+    
+    // Generate time slots from 00:00 to 23:00
+    for (let hour = 0; hour < 24; hour++) {
+        const time = `${hour.toString().padStart(2, '0')}:00`;
+        times.push(time);
     }
-    function cancelEdit(btn) {
-        const row = btn.closest('tr');
-        row.classList.remove('editing-row');
-        row.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
-        row.querySelectorAll('.view-mode').forEach(el => el.style.display = '');
-    }
-    function saveEdit(btn) {
-        const row = btn.closest('tr');
-        const needId = row.dataset.needId;
-        const daySelect = row.querySelector('select[name="day_of_week"]');
-        const startInput = row.querySelector('input[name="start_time"]');
-        const endInput = row.querySelector('input[name="end_time"]');
-        const roleSelect = row.querySelector('select[name="role_required"]');
-        const countInput = row.querySelector('input[name="required_count"]');
-        const errorBox = row.querySelector('.inline-errors');
-        if (errorBox) { errorBox.textContent = ''; }
-        const payload = {
-            action: 'update_coverage',
-            need_id: needId,
-            day_of_week: daySelect.value,
-            start_time: startInput.value,
-            end_time: endInput.value,
-            role_required: roleSelect.value,
-            required_count: countInput.value,
-            fetch: '1'
-        };
-        // Capture previous state for undo
-        const prev = {
-            need_id: needId,
-            day_of_week: row.querySelector('.day-badge').textContent.trim(),
-            time_window: row.querySelector('.time-range').textContent.trim(),
-            role_required: row.querySelector('.role-badge').textContent.trim().toLowerCase(),
-            required_count: row.querySelector('.count-badge').textContent.trim()
-        };
-        fetch(window.location.pathname + window.location.search, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(payload)
-        }).then(async r => {
-            const ct = r.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) {
-                const txt = await r.text();
-                throw new Error('Non-JSON response (status ' + r.status + '): ' + txt.slice(0, 120));
-            }
-            let data = await r.json();
-            if (!data.ok) {
-                if (errorBox) {
-                    errorBox.textContent = (data.errors || []).join(' | ');
-                } else {
-                    alert('Update failed: ' + (data.errors || []).join(', '));
+    
+    times.forEach(time => {
+        // Add time column
+        const timeCell = document.createElement('div');
+        timeCell.className = 'time-column';
+        timeCell.textContent = time;
+        calendarGrid.appendChild(timeCell);
+        
+        // Add cells for each day
+        for (let day = 0; day < 7; day++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell';
+            cell.dataset.time = time;
+            cell.dataset.day = day;
+            
+            cell.addEventListener('click', function(e) {
+                if (e.target === cell) {
+                    showModal(day, time);
                 }
-                return;
+            });
+            
+            calendarGrid.appendChild(cell);
+        }
+    });
+    
+    updateWeekDisplay();
+    markCurrentTime();
+}
+
+// Global variables and functions
+let currentDate = new Date();
+const weekDisplay = document.getElementById('week-display');
+
+// Set to beginning of week (Sunday)
+currentDate.setDate(currentDate.getDate() - currentDate.getDay());
+
+function updateWeekDisplay() {
+    const endDate = new Date(currentDate);
+    endDate.setDate(endDate.getDate() + 6);
+    
+    const options = { month: 'short', day: 'numeric' };
+    weekDisplay.textContent = `${currentDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarGrid = document.getElementById('calendar-grid');
+    
+    function markCurrentTime() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentDay = now.getDay();
+        
+        document.querySelectorAll('.current-time').forEach(el => el.remove());
+        
+        if (isSameWeek(now, currentDate)) {
+            const cell = document.querySelector(`.calendar-cell[data-day="${currentDay}"][data-time="${currentHour}:00"]`);
+            if (cell) {
+                const marker = document.createElement('div');
+                marker.className = 'current-time';
+                cell.appendChild(marker);
             }
-            // Push undo state
-            undoStack.push(prev);
-            redoStack.length = 0;
-            // Update view mode values
-            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            row.querySelector('.day-badge').textContent = dayNames[data.need.day_of_week];
-            row.querySelector('.time-range').textContent = data.need.start_time + ' - ' + data.need.end_time;
-            const roleBadge = row.querySelector('.role-badge');
-            roleBadge.className = 'role-badge ' + data.need.role_required;
-            roleBadge.textContent = data.need.role_required.charAt(0).toUpperCase() + data.need.role_required.slice(1);
-            row.querySelector('.count-badge').textContent = data.need.required_count;
-            cancelEdit(btn); // back to view mode
-            // Full page reload so gap warnings + aggregate stats refresh automatically
-            setTimeout(() => { window.location.reload(); }, 50);
-        }).catch(err => {
-            if (errorBox) {
-                errorBox.textContent = 'Save error: ' + err.message;
-            } else {
-                alert('Error saving change: ' + err);
-            }
-        });
+        }
     }
-    // Optional undo/redo buttons (could be placed globally)
-    function undoChange() {
-        if (!undoStack.length) { alert('Nothing to undo'); return; }
-        const last = undoStack.pop();
-        redoStack.push(last); // For redo implementation we’d need original state; simplified
-        // Parse time window back to start/end
-        const [start, end] = last.time_window.split(' - ');
-        const dayIndex = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].indexOf(last.day_of_week);
-        const payload = {
-            action: 'update_coverage',
-            need_id: last.need_id,
-            day_of_week: dayIndex,
-            start_time: start,
-            end_time: end,
-            role_required: last.role_required.toLowerCase(),
-            required_count: last.required_count
-        };
-        fetch(window.location.pathname + window.location.search, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(payload) })
-            .then(() => window.location.reload());
+
+    function isSameWeek(date1, date2) {
+        const d1 = new Date(date1);
+        const d2 = new Date(date2);
+        d1.setDate(d1.getDate() - d1.getDay());
+        d2.setDate(d2.getDate() - d2.getDay());
+        return d1.toDateString() === d2.toDateString();
     }
+    
+    // Initialize calendar
+    generateTimeSlots();
+    
+    // Set up event listeners
+    const cancelButton = document.querySelector('#time-block-modal .btn-secondary');
+    cancelButton.addEventListener('click', closeModal);
+    
+    document.getElementById('prev-week').addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() - 7);
+        generateTimeSlots();
+    });
+    
+    document.getElementById('next-week').addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() + 7);
+        generateTimeSlots();
+    });
+    
+    document.getElementById('current-week-btn').addEventListener('click', () => {
+        currentDate = new Date();
+        currentDate.setDate(currentDate.getDate() - currentDate.getDay());
+        generateTimeSlots();
+    });
+    
+    // Update current time indicator every minute
+    setInterval(markCurrentTime, 60000);
+});
 </script>
 {% endblock %}
 

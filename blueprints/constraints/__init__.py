@@ -9,5 +9,3 @@ constraints_bp = Blueprint(
     static_url_path='/constraints/static'
 )
 
-from . import routes
-

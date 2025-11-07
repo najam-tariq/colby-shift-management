@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Automatic Rejection System - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.rejection-system {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.form-group select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.test-results {
+    margin-top: 2rem;
+    display: none;
+}
+
+.result-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.result-section.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.result-section.warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+}
+
+.result-section.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.shift-list {
+    margin-top: 1rem;
+}
+
+.shift-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #f9f9f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.shift-time {
+    font-weight: 600;
+}
+
+.shift-duration {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.rejection-reason {
+    color: #d73527;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.rejections-log {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rejection-log-item {
+    padding: 1rem;
+    border-left: 4px solid #dc3545;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.rejection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.rejection-time {
+    font-weight: 600;
+    color: #333;
+}
+
+.rejection-duration {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.rejection-details {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.help-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #b6d4db;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Automatic Rejection System{% endblock %}
+{% block header_subtitle %}Test and monitor automatic rejection of impractical shifts (Issue #27){% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+    <strong>Issue #27:</strong> This system automatically rejects any generated shift shorter than 1 hour to prevent impractical shifts from appearing in schedules. All rejections are logged for debugging purposes.
+</div>
+
+<div class="rejection-system">
+    <h2>Test Automatic Rejection System</h2>
+    
+    <div class="form-section">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="term_id">Term</label>
+                <select id="term_id" name="term_id" required>
+                    <option value="">Select a term</option>
+                    {% for term in terms %}
+                    <option value="{{ term.term_id }}">{{ term.term_name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">Select term to test rejection system against its policies</div>
+            </div>
+            <div class="form-group">
+                <button id="runTest" class="btn btn-primary" disabled>Run Rejection Test</button>
+                <div class="help-text">Tests 4 sample shifts: 2 too short (will be rejected), 2 valid (will be accepted)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="testResults" class="test-results">
+        <div id="summarySection" class="result-section success">
+            <h3>Test Summary</h3>
+            <div id="summaryStats" class="stats-grid"></div>
+        </div>
+        
+        <div id="acceptedSection" class="result-section success">
+            <h3>✅ Accepted Shifts</h3>
+            <div id="acceptedShifts" class="shift-list"></div>
+        </div>
+        
+        <div id="rejectedSection" class="result-section error">
+            <h3>❌ Automatically Rejected Shifts</h3>
+            <div id="rejectedShifts" class="shift-list"></div>
+        </div>
+        
+        <div id="warningSection" class="result-section warning" style="display: none;">
+            <h3>⚠️ Coverage Warning</h3>
+            <p>Some shifts were rejected which may cause coverage gaps. Manual intervention may be required.</p>
+        </div>
+    </div>
+</div>
+
+<div class="rejections-log">
+    <h2>Recent Rejection Log</h2>
+    <div id="currentStats">
+        <p>Select a term above to load rejection statistics and recent logs.</p>
+    </div>
+    
+    {% if recent_rejections %}
+    <h3>Latest Rejections (All Terms)</h3>
+    {% for rejection in recent_rejections %}
+    <div class="rejection-log-item">
+        <div class="rejection-header">
+            <span class="rejection-time">{{ rejection.proposed_start_time.strftime('%H:%M') }} - {{ rejection.proposed_end_time.strftime('%H:%M') }}</span>
+            <span class="rejection-duration">{{ rejection.duration_minutes }} minutes</span>
+        </div>
+        <div class="rejection-details">
+            <strong>Date:</strong> {{ rejection.proposed_date.strftime('%Y-%m-%d') }} | 
+            <strong>User:</strong> {{ rejection.user.name if rejection.user else 'Unknown' }} | 
+            <strong>Type:</strong> {{ rejection.rejection_type.title() }} | 
+            <strong>Rejected:</strong> {{ rejection.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+            <br><strong>Reason:</strong> {{ rejection.rejection_reason }}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No recent rejections found. Run some tests to see rejected shifts appear here.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTermId = null;
+
+// Enable test button when term is selected
+document.getElementById('term_id').addEventListener('change', async function() {
+    const termId = this.value;
+    currentTermId = termId;
+    
+    document.getElementById('runTest').disabled = !termId;
+    
+    if (termId) {
+        await loadRejectionStats(termId);
+    } else {
+        document.getElementById('currentStats').innerHTML = '<p>Select a term above to load rejection statistics and recent logs.</p>';
+    }
+});
+
+// Run rejection test
+document.getElementById('runTest').addEventListener('click', async function() {
+    if (!currentTermId) return;
+    
+    this.disabled = true;
+    this.textContent = 'Running Test...';
+    
+    try {
+        const response = await fetch('{{ url_for("constraints.test_schedule_generation") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                term_id: parseInt(currentTermId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTestResults(data.result);
+            await loadRejectionStats(currentTermId); // Refresh stats
+        } else {
+            alert('Test failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error running test: ' + error.message);
+    } finally {
+        this.disabled = false;
+        this.textContent = 'Run Rejection Test';
+    }
+});
+
+function displayTestResults(result) {
+    const testResults = document.getElementById('testResults');
+    testResults.style.display = 'block';
+    
+    // Summary stats
+    document.getElementById('summaryStats').innerHTML = `
+        <div class="stat-item">
+            <div class="stat-number">${result.total_proposed}</div>
+            <div class="stat-label">Total Proposed</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${result.total_accepted}</div>
+            <div class="stat-label">Accepted</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${result.total_rejected}</div>
+            <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">${Math.round((result.total_rejected / result.total_proposed) * 100)}%</div>
+            <div class="stat-label">Rejection Rate</div>
+        </div>
+    `;
+    
+    // Accepted shifts
+    const acceptedHtml = result.valid_shifts.map(shift => `
+        <div class="shift-item">
+            <div>
+                <span class="shift-time">${shift.start_time} - ${shift.end_time}</span>
+                <div class="shift-duration">${calculateDuration(shift.start_time, shift.end_time)} minutes</div>
+            </div>
+            <span style="color: #28a745;">✅ Valid</span>
+        </div>
+    `).join('');
+    document.getElementById('acceptedShifts').innerHTML = acceptedHtml;
+    
+    // Rejected shifts
+    const rejectedHtml = result.rejected_shifts.map(shift => `
+        <div class="shift-item">
+            <div>
+                <span class="shift-time">${shift.start_time} - ${shift.end_time}</span>
+                <div class="shift-duration">${calculateDuration(shift.start_time, shift.end_time)} minutes</div>
+                <div class="rejection-reason">${shift.rejection_reason}</div>
+            </div>
+            <span style="color: #dc3545;">❌ Rejected</span>
+        </div>
+    `).join('');
+    document.getElementById('rejectedShifts').innerHTML = rejectedHtml;
+    
+    // Coverage warning
+    if (result.coverage_warning) {
+        document.getElementById('warningSection').style.display = 'block';
+    } else {
+        document.getElementById('warningSection').style.display = 'none';
+    }
+}
+
+async function loadRejectionStats(termId) {
+    try {
+        const response = await fetch(`{{ url_for('constraints.get_rejection_stats', term_id=0) }}`.replace('0', termId));
+        const data = await response.json();
+        
+        if (data.success) {
+            displayRejectionStats(data.stats);
+        } else {
+            document.getElementById('currentStats').innerHTML = `<p style="color: red;">Error loading stats: ${data.error}</p>`;
+        }
+    } catch (error) {
+        document.getElementById('currentStats').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+    }
+}
+
+function displayRejectionStats(stats) {
+    if (stats.total_rejections === 0) {
+        document.getElementById('currentStats').innerHTML = '<p>No rejections recorded for this term yet.</p>';
+        return;
+    }
+    
+    document.getElementById('currentStats').innerHTML = `
+        <h3>Rejection Statistics for Selected Term</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">${stats.total_rejections}</div>
+                <div class="stat-label">Total Rejections</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${stats.duration_rejections}</div>
+                <div class="stat-label">Duration Rejections</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${Math.round(stats.avg_rejected_duration)}</div>
+                <div class="stat-label">Avg Duration (min)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">${stats.shortest_rejected}</div>
+                <div class="stat-label">Shortest Rejected</div>
+            </div>
+        </div>
+    `;
+}
+
+function calculateDuration(startTime, endTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let duration = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    
+    // Handle overnight shifts
+    if (duration < 0) {
+        duration += 24 * 60;
+    }
+    
+    return duration;
+}
+</script>
+{% endblock %}

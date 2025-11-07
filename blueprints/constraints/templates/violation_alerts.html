@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+
+{% block title %}Shift Violation Alerts - Colby Shift Management{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('auth.static', filename='dashboard.css') }}">
+<style>
+.violation-alerts {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.violation-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.violation-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.summary-card.critical {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-color: #f5c6cb;
+}
+
+.summary-card.error {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-color: #ffeaa7;
+}
+
+.summary-card.warning {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border-color: #bee5eb;
+}
+
+.summary-card h3 {
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.summary-card p {
+    margin: 0;
+    color: #666;
+    font-weight: 500;
+}
+
+.detection-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.violations-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.violations-table th,
+.violations-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.violations-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+}
+
+.violations-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.violation-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.violation-indicator.critical {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.violation-indicator.error {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.violation-indicator.warning {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.violation-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.violation-icon.critical {
+    background: #dc3545;
+}
+
+.violation-icon.error {
+    background: #ffc107;
+}
+
+.violation-icon.warning {
+    background: #17a2b8;
+}
+
+.violation-details {
+    cursor: pointer;
+    position: relative;
+}
+
+.violation-tooltip {
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    min-width: 250px;
+    z-index: 1000;
+    display: none;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.violation-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid #333;
+}
+
+.quick-fix-suggestions {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #555;
+}
+
+.quick-fix-btn {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin: 0.25rem 0.25rem 0 0;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.quick-fix-btn:hover {
+    background: #0056b3;
+}
+
+.override-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.override-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.override-btn.approve {
+    background: #28a745;
+    color: white;
+}
+
+.override-btn.suggestions {
+    background: #17a2b8;
+    color: white;
+}
+
+.override-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.override-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.override-modal h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+}
+
+.override-modal textarea {
+    width: 100%;
+    height: 100px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .violation-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .detection-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .violations-table {
+        font-size: 0.85rem;
+    }
+    
+    .violations-table th,
+    .violations-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block header_title %}Shift Violation Alerts{% endblock %}
+{% block header_subtitle %}Visual alerts for shifts violating duration rules (Issue #30){% endblock %}
+
+{% block content %}
+<div class="violation-alerts">
+    <!-- Violation Summary Cards -->
+    <div class="violation-section">
+        <h2>Violation Summary</h2>
+        <div class="violation-summary">
+            <div class="summary-card">
+                <h3 id="total-violations">{{ violation_summary.total_violations }}</h3>
+                <p>Total Violations</p>
+            </div>
+            <div class="summary-card critical">
+                <h3 id="critical-count">{{ violation_summary.by_severity.critical }}</h3>
+                <p>Critical Violations</p>
+            </div>
+            <div class="summary-card error">
+                <h3 id="error-count">{{ violation_summary.by_severity.error }}</h3>
+                <p>Error Violations</p>
+            </div>
+            <div class="summary-card warning">
+                <h3 id="warning-count">{{ violation_summary.by_severity.warning }}</h3>
+                <p>Warning Violations</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detection Controls -->
+    <div class="violation-section">
+        <h2>Violation Detection</h2>
+        <div class="detection-controls">
+            <label for="term-select">Select Term:</label>
+            <select id="term-select">
+                <option value="">Select a term</option>
+                {% for term in terms %}
+                <option value="{{ term.term_id }}">{{ term.name }} ({{ term.start_date }} - {{ term.end_date }})</option>
+                {% endfor %}
+            </select>
+            <button id="detect-violations-btn" class="btn btn-primary">Detect Violations</button>
+            <button id="refresh-summary-btn" class="btn btn-secondary">Refresh Summary</button>
+        </div>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="violation-section">
+        <h2>Active Violations</h2>
+        <div id="violations-container">
+            {% if recent_violations %}
+                <table class="violations-table">
+                    <thead>
+                        <tr>
+                            <th>Severity</th>
+                            <th>Student</th>
+                            <th>Date & Time</th>
+                            <th>Duration</th>
+                            <th>Violation</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-tbody">
+                        {% for violation, shift, user in recent_violations %}
+                        <tr data-violation-id="{{ violation.violation_id }}">
+                            <td>
+                                <div class="violation-indicator {{ violation.severity }}">
+                                    <span class="violation-icon {{ violation.severity }}"></span>
+                                    {{ violation.severity|title }}
+                                </div>
+                            </td>
+                            <td>{{ user.name }}</td>
+                            <td>
+                                {{ shift.date.strftime('%Y-%m-%d') }}<br>
+                                {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                            </td>
+                            <td>
+                                <strong>{{ violation.current_duration }} min</strong>
+                                <br><small>Expected: {{ violation.expected_min }}-{{ violation.expected_max }} min</small>
+                            </td>
+                            <td>
+                                <div class="violation-details" data-violation-id="{{ violation.violation_id }}">
+                                    <strong>{{ violation.violation_type|replace('_', ' ')|title }}</strong>
+                                    <div class="violation-tooltip" id="tooltip-{{ violation.violation_id }}">
+                                        {{ violation.violation_message }}
+                                        <div class="quick-fix-suggestions">
+                                            <strong>Quick fixes:</strong>
+                                            <div id="suggestions-{{ violation.violation_id }}">
+                                                <button class="quick-fix-btn" data-violation-id="{{ violation.violation_id }}">Load Suggestions</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="override-controls">
+                                    <button class="override-btn suggestions" data-violation-id="{{ violation.violation_id }}">Quick Fix</button>
+                                    <button class="override-btn approve" data-violation-id="{{ violation.violation_id }}">Override</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No active violations found. Run violation detection on a term to identify issues.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Override Modal -->
+<div id="override-modal" class="override-modal">
+    <div class="override-modal-content">
+        <h3>Override Violation</h3>
+        <p>Please provide a justification for overriding this violation:</p>
+        <textarea id="override-justification" placeholder="Enter justification (minimum 10 characters)..."></textarea>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="hideOverrideModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitOverride()">Apply Override</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}<a href="{{ url_for('constraints.index') }}">← Back to Constraints</a>{% endblock %}
+
+{% block scripts %}
+<script>
+let currentViolationId = null;
+
+// Show/hide tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const violationDetails = document.querySelectorAll('.violation-details');
+    
+    violationDetails.forEach(detail => {
+        detail.addEventListener('mouseenter', function() {
+            const violationId = this.dataset.violationId;
+            const tooltip = document.getElementById(`tooltip-${violationId}`);
+            if (tooltip) {
+                tooltip.style.display = 'block';
+            }
+        });
+        
+        detail.addEventListener('mouseleave', function() {
+            const violationId = this.dataset.violationId;
+            const tooltip = document.getElementById(`tooltip-${violationId}`);
+            if (tooltip) {
+                tooltip.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Detect violations for selected term
+document.getElementById('detect-violations-btn').addEventListener('click', async function() {
+    const termId = document.getElementById('term-select').value;
+    if (!termId) {
+        alert('Please select a term first');
+        return;
+    }
+    
+    this.classList.add('loading');
+    this.textContent = 'Detecting...';
+    
+    try {
+        const response = await fetch(`{{ url_for('constraints.detect_violations', term_id=0) }}`.replace('0', termId), {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Detected ${result.violations_detected} violations`);
+            await refreshViolationsList(termId);
+            await refreshSummary();
+        } else {
+            alert('Error detecting violations: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error detecting violations: ' + error.message);
+    } finally {
+        this.classList.remove('loading');
+        this.textContent = 'Detect Violations';
+    }
+});
+
+// Refresh violation summary
+document.getElementById('refresh-summary-btn').addEventListener('click', refreshSummary);
+
+async function refreshSummary() {
+    try {
+        const termId = document.getElementById('term-select').value;
+        const url = termId ? 
+            `{{ url_for('constraints.get_violation_summary', term_id=0) }}`.replace('0', termId) :
+            '{{ url_for("constraints.violation_alerts") }}';
+            
+        // For now, just reload the page to get updated summary
+        location.reload();
+    } catch (error) {
+        console.error('Error refreshing summary:', error);
+    }
+}
+
+async function refreshViolationsList(termId) {
+    if (!termId) return;
+    
+    try {
+        const response = await fetch(`{{ url_for('constraints.get_violations_list', term_id=0) }}`.replace('0', termId));
+        const result = await response.json();
+        
+        if (result.success) {
+            updateViolationsTable(result.violations);
+        }
+    } catch (error) {
+        console.error('Error refreshing violations list:', error);
+    }
+}
+
+function updateViolationsTable(violations) {
+    const tbody = document.getElementById('violations-tbody');
+    
+    if (violations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">No violations found for this term.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = violations.map(violation => `
+        <tr data-violation-id="${violation.violation_id}">
+            <td>
+                <div class="violation-indicator ${violation.severity}">
+                    <span class="violation-icon ${violation.severity}"></span>
+                    ${violation.severity.charAt(0).toUpperCase() + violation.severity.slice(1)}
+                </div>
+            </td>
+            <td>${violation.user_name}</td>
+            <td>
+                ${violation.date}<br>
+                ${violation.start_time} - ${violation.end_time}
+            </td>
+            <td>
+                <strong>${violation.current_duration} min</strong>
+                <br><small>Expected: ${violation.expected_min}-${violation.expected_max} min</small>
+            </td>
+            <td>
+                <div class="violation-details" data-violation-id="${violation.violation_id}">
+                    <strong>${violation.violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>
+                    <div class="violation-tooltip" id="tooltip-${violation.violation_id}">
+                        ${violation.message}
+                        <div class="quick-fix-suggestions">
+                            <strong>Quick fixes:</strong>
+                            <div id="suggestions-${violation.violation_id}">
+                                <button class="quick-fix-btn" onclick="loadSuggestions(${violation.violation_id})">Load Suggestions</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="override-controls">
+                    <button class="override-btn suggestions" onclick="showSuggestions(${violation.violation_id})">Quick Fix</button>
+                    <button class="override-btn approve" onclick="showOverrideModal(${violation.violation_id})">Override</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Load quick-fix suggestions
+async function loadSuggestions(violationId) {
+    try {
+        const response = await fetch(`{{ url_for('constraints.get_violation_suggestions', violation_id=0) }}`.replace('0', violationId));
+        const result = await response.json();
+        
+        if (result.success) {
+            const suggestionsContainer = document.getElementById(`suggestions-${violationId}`);
+            
+            if (result.suggestions.length === 0) {
+                suggestionsContainer.innerHTML = '<em>No automatic fixes available</em>';
+                return;
+            }
+            
+            suggestionsContainer.innerHTML = result.suggestions.map(suggestion => `
+                <button class="quick-fix-btn" onclick="applyFix(${violationId}, '${suggestion.action}', ${JSON.stringify(suggestion.parameters).replace(/"/g, '&quot;')})">
+                    ${suggestion.description}
+                </button>
+            `).join('');
+        } else {
+            alert('Error loading suggestions: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error loading suggestions: ' + error.message);
+    }
+}
+
+// Show suggestions in tooltip
+async function showSuggestions(violationId) {
+    await loadSuggestions(violationId);
+    
+    // Show the tooltip
+    const tooltip = document.getElementById(`tooltip-${violationId}`);
+    if (tooltip) {
+        tooltip.style.display = 'block';
+    }
+}
+
+// Apply a quick fix
+async function applyFix(violationId, fixType, parameters) {
+    if (!confirm(`Are you sure you want to apply this fix: ${fixType}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{{ url_for('constraints.apply_violation_fix', violation_id=0) }}`.replace('0', violationId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fix_type: fixType,
+                parameters: parameters
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Fix applied successfully: ' + result.message);
+            
+            // Remove the violation row
+            const row = document.querySelector(`tr[data-violation-id="${violationId}"]`);
+            if (row) {
+                row.remove();
+            }
+            
+            await refreshSummary();
+        } else {
+            alert('Error applying fix: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error applying fix: ' + error.message);
+    }
+}
+
+// Override modal functions
+function showOverrideModal(violationId) {
+    currentViolationId = violationId;
+    document.getElementById('override-modal').style.display = 'flex';
+    document.getElementById('override-justification').value = '';
+    document.getElementById('override-justification').focus();
+}
+
+function hideOverrideModal() {
+    currentViolationId = null;
+    document.getElementById('override-modal').style.display = 'none';
+}
+
+async function submitOverride() {
+    const justification = document.getElementById('override-justification').value.trim();
+    
+    if (justification.length < 10) {
+        alert('Justification must be at least 10 characters long');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{{ url_for('constraints.override_violation', violation_id=0) }}`.replace('0', currentViolationId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                justification: justification
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Override applied successfully');
+            
+            // Remove the violation row
+            const row = document.querySelector(`tr[data-violation-id="${currentViolationId}"]`);
+            if (row) {
+                row.remove();
+            }
+            
+            hideOverrideModal();
+            await refreshSummary();
+        } else {
+            alert('Error applying override: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error applying override: ' + error.message);
+    }
+}
+
+// Close modal on outside click
+document.getElementById('override-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideOverrideModal();
+    }
+});
+
+// Add event listeners for buttons with data attributes
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle quick-fix-btn clicks
+    document.querySelectorAll('.quick-fix-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                loadSuggestions(violationId);
+            }
+        });
+    });
+    
+    // Handle suggestions button clicks
+    document.querySelectorAll('.override-btn.suggestions').forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showSuggestions(violationId);
+            }
+        });
+    });
+    
+    // Handle override button clicks
+    document.querySelectorAll('.override-btn.approve').forEach(button => {
+        button.addEventListener('click', function() {
+            const violationId = this.getAttribute('data-violation-id');
+            if (violationId) {
+                showOverrideModal(violationId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

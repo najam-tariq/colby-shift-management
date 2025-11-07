@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Transition Time Violations - Issue #35{% endblock %}
+
+{% block content %}
+<div class="transition-violations-container">
+    <div class="header-section">
+        <h1>⏱️ Transition Time Violations Management</h1>
+        <p class="description">Monitor and resolve insufficient break time between consecutive shifts (Issue #35)</p>
+    </div>
+
+    <!-- Term Selection -->
+    <div class="term-selection">
+        <label for="termSelect">📅 Select Term:</label>
+        <select id="termSelect" onchange="updateViolationAnalysis()">
+            <option value="">-- Select a Term --</option>
+            {% for term in terms %}
+            <option value="{{ term.term_id }}" {% if term.term_id == selected_term_id %}selected{% endif %}>
+                {{ term.term_name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if selected_term_id and violations_analysis %}
+    <!-- Violations Summary -->
+    <div class="violations-summary">
+        <h2>Transition Time Violations Summary</h2>
+        <div class="summary-cards">
+            <div class="summary-card critical">
+                <h3>🚨 Critical Violations</h3>
+                <div class="number">{{ violations_analysis.summary.critical_violations }}</div>
+                <p>Shortages of 15+ minutes</p>
+            </div>
+            
+            <div class="summary-card warning">
+                <h3>Warning Violations</h3>
+                <div class="number">{{ violations_analysis.summary.warning_violations }}</div>
+                <p>Shortages of 5-14 minutes</p>
+            </div>
+            
+            <div class="summary-card minor">
+                <h3>ℹ️ Minor Violations</h3>
+                <div class="number">{{ violations_analysis.summary.minor_violations }}</div>
+                <p>Shortages of 1-4 minutes</p>
+            </div>
+            
+            <div class="summary-card total">
+                <h3>👥 Students Affected</h3>
+                <div class="number">{{ violations_analysis.summary.users_affected }}</div>
+                <p>Out of total students</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Policy Configuration -->
+    <div class="policy-section">
+        <h3>⚙️ Transition Time Policy</h3>
+        <div class="policy-info">
+            {% if policy %}
+            <div class="policy-display">
+                <div class="policy-item">
+                    <strong>Minimum Transition Time:</strong> {{ policy.min_transition_time }} minutes
+                </div>
+                <div class="policy-item">
+                    <strong>Warnings Enabled:</strong> {{ 'Yes' if policy.transition_warning_enabled else 'No' }}
+                </div>
+            </div>
+            <a href="{{ url_for('constraints.gap_management', term_id=selected_term_id) }}" class="btn btn-secondary">
+                ⚙️ Configure Policy
+            </a>
+            {% else %}
+            <p class="no-policy">No policy configured for this term. <a href="{{ url_for('constraints.gap_management', term_id=selected_term_id) }}">Configure policy</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Detection Controls -->
+    <div class="detection-controls">
+        <h3>Violation Detection</h3>
+        <div class="control-buttons">
+            <button type="button" id="detectBtn" onclick="detectViolations()" class="btn btn-primary">
+                Scan for Violations
+            </button>
+            <button type="button" onclick="refreshViolations()" class="btn btn-secondary">
+                🔄 Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="violations-table-section">
+        <h3>Detected Violations</h3>
+        <div class="table-container">
+            <table class="violations-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>First Shift End</th>
+                        <th>Second Shift Start</th>
+                        <th>Actual Break</th>
+                        <th>Required Break</th>
+                        <th>Shortage</th>
+                        <th>Severity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="violationsTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">Select a term and click "Scan for Violations" to detect issues</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.transition-violations-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header-section h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.description {
+    color: #7f8c8d;
+    font-size: 1.1em;
+}
+
+.term-selection {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.term-selection select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-left: 10px;
+    min-width: 200px;
+}
+
+.violations-summary {
+    margin-bottom: 30px;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.summary-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid;
+}
+
+.summary-card.critical {
+    border-left-color: #e74c3c;
+}
+
+.summary-card.warning {
+    border-left-color: #f39c12;
+}
+
+.summary-card.minor {
+    border-left-color: #3498db;
+}
+
+.summary-card.total {
+    border-left-color: #2ecc71;
+}
+
+.summary-card .number {
+    font-size: 2em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.policy-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.policy-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.policy-item {
+    background: #fff;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 3px solid #3498db;
+}
+
+.detection-controls {
+    background: #e8f5e8;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.violations-table-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.violations-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.violations-table th,
+.violations-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.violations-table th {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+.severity-critical {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.severity-warning {
+    color: #f39c12;
+    font-weight: bold;
+}
+
+.severity-minor {
+    color: #3498db;
+    font-weight: bold;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: #7f8c8d;
+}
+
+.no-policy {
+    color: #e74c3c;
+    font-style: italic;
+}
+</style>
+
+<script>
+let currentViolationId = null;
+
+function updateViolationAnalysis() {
+    const termSelect = document.getElementById('termSelect');
+    const termId = termSelect.value;
+    
+    if (termId) {
+        window.location.href = `{{ url_for('constraints.transition_violations') }}?term_id=${termId}`;
+    }
+}
+
+function detectViolations() {
+    const btn = document.getElementById('detectBtn');
+    btn.textContent = 'Scanning...';
+    btn.disabled = true;
+    
+    const termSelect = document.getElementById('termSelect');
+    const termId = termSelect.value;
+    
+    fetch(`/constraints/transition-violations/detect/${termId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshViolations();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error detecting violations: ' + error);
+    })
+    .finally(() => {
+        btn.textContent = 'Scan for Violations';
+        btn.disabled = false;
+    });
+}
+
+function refreshViolations() {
+    const termSelect = document.getElementById('termSelect');
+    const termId = termSelect.value;
+    
+    if (!termId) {
+        document.getElementById('violationsTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-muted">Please select a term</td></tr>';
+        return;
+    }
+    
+    fetch(`/constraints/transition-violations/data/${termId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.violations) {
+            updateViolationsTable(data.violations);
+        } else {
+            console.error('Error loading violations:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching violations:', error);
+    });
+}
+
+function updateViolationsTable(violations) {
+    const tbody = document.getElementById('violationsTableBody');
+    if (!tbody) return;
+    
+    if (violations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No transition time violations found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = violations.map(violation => {
+        const shortage = violation.required_transition_minutes - violation.actual_transition_minutes;
+        const severityClass = `severity-${violation.severity}`;
+        
+        return `
+            <tr ${violation.is_resolved ? 'style="opacity: 0.6;"' : ''}>
+                <td>${violation.user_name}</td>
+                <td>${violation.first_shift_date} ${violation.first_shift_end}</td>
+                <td>${violation.second_shift_date} ${violation.second_shift_start}</td>
+                <td>${violation.actual_transition_minutes} min</td>
+                <td>${violation.required_transition_minutes} min</td>
+                <td class="${severityClass}">${shortage} min</td>
+                <td class="${severityClass}">${violation.severity.toUpperCase()}</td>
+                <td>
+                    ${violation.is_resolved ? 
+                        '<span class="text-muted">Resolved</span>' : 
+                        `<button onclick="resolveViolation(${violation.violation_id})" class="btn btn-sm">✓ Resolve</button>`
+                    }
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function resolveViolation(violationId) {
+    const resolution = prompt('Resolution method (e.g., "shift_moved", "break_extended", "manual_override"):');
+    if (!resolution) return;
+    
+    const notes = prompt('Notes (optional):') || '';
+    
+    fetch(`/constraints/transition-violations/resolve/${violationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            resolution_method: resolution,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            refreshViolations();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error resolving violation: ' + error);
+    });
+}
+
+// Load violations on page load and set up event handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const termSelect = document.getElementById('termSelect');
+    
+    function updateFormActions() {
+        const termId = termSelect.value;
+        if (termId) {
+            refreshViolations();
+        }
+    }
+    
+    // Set up term selection handler
+    termSelect.addEventListener('change', updateFormActions);
+    
+    // Initial load if term is already selected
+    if (termSelect.value) {
+        updateFormActions();
+    }
+});
+</script>
+{% endblock %}

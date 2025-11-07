@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+import uuid
 
 db = SQLAlchemy()
 
@@ -13,6 +14,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.Text, nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     password_hash = db.Column(db.Text, nullable=False)
+    calendar_token = db.Column(db.Text, nullable=True, unique=True)  # UUID for secure calendar feed access
     
     availability = db.relationship('Availability', back_populates='user', cascade='all, delete')
     shifts = db.relationship('Shift', back_populates='user', cascade='all, delete')
@@ -31,6 +33,18 @@ class User(UserMixin, db.Model):
     def get_id(self):
         """Return user ID as string for Flask-Login"""
         return str(self.user_id)
+    
+    def ensure_calendar_token(self):
+        """Generate calendar token if it doesn't exist"""
+        if not self.calendar_token:
+            self.calendar_token = str(uuid.uuid4())
+            db.session.commit()
+        return self.calendar_token
+    
+    @property
+    def calendar_token_or_create(self):
+        """Property that ensures calendar token exists before returning it"""
+        return self.ensure_calendar_token()
     
     def __repr__(self):
         return f'<User {self.email}>'

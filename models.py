@@ -727,6 +727,16 @@ class StaffingNeeds(db.Model):
     
     term = db.relationship('Term', back_populates='staffing_needs')
     
+    @property
+    def student_capacity(self):
+        """Backward compatibility property - maps to required_count"""
+        return self.required_count
+    
+    @student_capacity.setter
+    def student_capacity(self, value):
+        """Backward compatibility setter - maps to required_count"""
+        self.required_count = value
+    
     def __repr__(self):
         return f'<StaffingNeeds {self.need_id} for Term {self.term_id}>'
 

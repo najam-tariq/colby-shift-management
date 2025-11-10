@@ -107,6 +107,19 @@ from models import User, Term, StaffingNeeds, Availability, Shift, Policy, Undes
 with app.app_context():
     db.create_all()
     print("Database tables created successfully!")
+    
+    # Seed database if no users exist (only run once)
+    user_count = User.query.count()
+    if user_count == 0:
+        print("No users found. Seeding database...")
+        try:
+            from seed_data import seed_database
+            seed_database()
+            print("Database seeded successfully!")
+        except Exception as e:
+            print(f"Error seeding database: {e}", flush=True)
+    else:
+        print(f"Database already has {user_count} users. Skipping seed.")
 
 if __name__ == '__main__':
     # Disable reloader to avoid database connection issues during development

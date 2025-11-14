@@ -16,6 +16,14 @@ from blueprints.outputs import outputs_bp
 
 app = Flask(__name__)
 
+"""
+Application factory & configuration.
+
+This file has been updated to support:
+- Heroku JawsDB MySQL (via the JAWSDB_URL config var)
+- Local SQLite fallback for development
+"""
+
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
@@ -24,16 +32,26 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 instance_dir = os.path.join(basedir, 'instance')
 os.makedirs(instance_dir, exist_ok=True)
 
-# Use absolute path for database
+# Use absolute path for SQLite database (local dev fallback)
 db_path = os.path.join(instance_dir, 'shift_management.db')
 
 # Debug info to understand path differences
 print(f"Process: {'MAIN' if not os.environ.get('WERKZEUG_RUN_MAIN') else 'RELOADER'}")
 print(f"Base dir: {basedir}")
-print(f"DB path: {db_path}")
+print(f"DB path (SQLite fallback): {db_path}")
 print(f"DB exists: {os.path.exists(db_path)}")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', f'sqlite:///{db_path}')
+# ---- Database configuration (JawsDB MySQL on Heroku, SQLite locally) ----
+# Prefer explicit JawsDB URL if present, then generic DATABASE_URL, then local SQLite
+jawsdb_url = os.environ.get('JAWSDB_URL')
+database_url = jawsdb_url or os.environ.get('DATABASE_URL')
+
+# If we're using MySQL from Heroku (e.g. JawsDB), normalize the URL for SQLAlchemy
+if database_url and database_url.startswith('mysql://'):
+    # SQLAlchemy expects mysql+pymysql:// when using the PyMySQL driver
+    database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions

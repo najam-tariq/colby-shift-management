@@ -1,8 +1,8 @@
 # Azure Deployment Plan
 
-## Detected Application
+## App
 - **App Name:** colby-shift-management
-- **App Type:** Python **Flask** web app (server-rendered templates/static) using **Gunicorn** (Procfile) and **Flask-SQLAlchemy** (supports MySQL via `DATABASE_URL`/`JAWSDB_URL`, local SQLite fallback).
+- **App Type:** Python Flask web app (server-rendered templates/static) using Gunicorn. Data layer: Flask-SQLAlchemy; supports MySQL via `DATABASE_URL`/`JAWSDB_URL` (SQLite fallback for local dev).
 
 ## Recommended Azure Region
 - **eastus**
@@ -10,44 +10,30 @@
 ## Azure Resources Needed
 1. **Azure App Service (Linux) – Web App**
    - Runtime: Python 3.11 (or latest supported)
-   - Startup command (example): `gunicorn app:app --preload --bind=0.0.0.0:8000`
-   - Configure App Settings:
-     - `SECRET_KEY` (required)
-     - `DATABASE_URL` (recommended; point to managed MySQL)
+   - Startup command: `gunicorn app:app --preload --bind=0.0.0.0:${PORT:-8000}`
+   - App settings: `SECRET_KEY`, `DATABASE_URL` (or `JAWSDB_URL`)
 
-2. **Azure Database for MySQL – Flexible Server** (recommended)
-   - The app already supports MySQL via SQLAlchemy + PyMySQL.
-   - Connection string should use `mysql+pymysql://...` (the app also normalizes `mysql://`).
+2. **Azure Database for MySQL – Flexible Server** (recommended for production)
+   - Provide SQLAlchemy connection string (the app normalizes `mysql://` → `mysql+pymysql://`).
 
 3. **Azure Key Vault** (recommended)
-   - Store `SECRET_KEY`, DB password/connection string.
-   - Optionally use a **managed identity** on App Service to read secrets.
+   - Store `SECRET_KEY` and DB credentials; optionally use App Service managed identity.
 
-4. **Azure Monitor / Application Insights** (recommended)
+4. **Azure Monitor + Application Insights** (recommended)
    - Centralized logs/metrics for the Flask + Gunicorn service.
 
 ## GitHub Actions Workflow (CI/CD)
-- **Trigger:** on push to `main` (and optionally PR validation)
-- **Build/Test:**
-  - Checkout
-  - Set up Python
-  - `pip install -r requirements.txt`
-  - Run lightweight checks (optional): `python -m compileall .` (and tests if present)
-- **Deploy:**
-  - Authenticate to Azure using **GitHub OIDC** (`azure/login`)
-  - Deploy to App Service using `azure/webapps-deploy` (zip deploy)
-  - Apply/verify required App Settings (`SECRET_KEY`, `DATABASE_URL`)
+- On push to `main` (and PR validation):
+  - Build: setup Python, `pip install -r requirements.txt`
+  - Checks: `python -m compileall .` (and tests if/when added)
+  - Deploy: Azure OIDC login, zip deploy to App Service, set/validate app settings
+  - Optional: run DB migrations (if a Flask-Migrate/Alembic command is added to the repo)
 
 ## Infrastructure as Code (IaC)
-- Generate **Bicep** templates to provision:
-  - Resource Group
-  - App Service Plan + Web App
-  - MySQL Flexible Server + database
-  - Key Vault (+ access policies/role assignments)
-  - Application Insights
+- Generate **Bicep** templates to provision: Resource Group, App Service Plan/Web App, MySQL Flexible Server (DB + firewall), Key Vault, Application Insights.
 
 ## Next Steps
-1. Decide the production database (recommended: Azure Database for MySQL Flexible Server).
-2. Define required environment variables (`SECRET_KEY`, `DATABASE_URL`) and store in Key Vault.
-3. Create Bicep for the resources above and wire GitHub OIDC to the Azure subscription.
-4. Add the GitHub Actions workflow to build and deploy on every push to `main`.
+1. Confirm production database choice (MySQL Flexible Server recommended).
+2. Provision Azure resources via Bicep and configure GitHub OIDC.
+3. Set secrets (`SECRET_KEY`, `DATABASE_URL`) via Key Vault/App Settings.
+4. Add GitHub Actions workflow to deploy on pushes to `main`.
